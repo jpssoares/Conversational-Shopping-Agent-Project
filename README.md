@@ -18,6 +18,13 @@ Then you run that env:
 
 `conda activate <environment_name>`
 
+Alternatively, if you already have created a venv, you can check if you have all the required packages.
+
+```
+conda install pip
+pip install -r requirements.txt
+```
+
 Then you can run the program:
 
 `python app.py`
