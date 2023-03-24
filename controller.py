@@ -1,13 +1,19 @@
 from opensearchpy import OpenSearch
 from opensearchpy import helpers
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 host = 'api.novasearch.org'
 port = 443
 
 index_name = "farfetch_images"
 
-user = 'ifetch' # Add your user name here.
-password = 'S48YdnMQ' # Add your user password here. For testing only. Don't store credentials in code.
+user = os.getenv('API_USER')
+password = os.getenv('API_PASSWORD')
+
+print(user + " " + password)
 
 client = OpenSearch(
     hosts = [{'host': host, 'port': port}],
