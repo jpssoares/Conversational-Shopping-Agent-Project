@@ -21,6 +21,10 @@ import transformers as tt
 beginning_msg = "Hello! Welcome to Farfetch! What item are you looking for?"
 retry_msg = "Sorry, I did not understand what you were trying to tell me... can we try again?"
 
+help_msg = "Here are some commands you can use:\n" \
+    + "Search for Products with Text and Attributes\n<field> <query>\nExample: product_main_colour black\n" \
+    + "Searching for Products with Cross-Modal Spaces\n<query_w1> <query_w2>\nExample: black boots\n"
+
 # Program initiation
 app = Flask(__name__) # create the Flask app
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -33,11 +37,13 @@ def interprete_msg(data):
     
     if (input_msg=='Hi!'):
         responseDict = { "has_response": True, "recommendations":"", "response":beginning_msg, "system_action":""}
-        jsonString = json.dumps(responseDict)
+    elif(input_msg.lower()=='help'):
+        responseDict = { "has_response": True, "recommendations":"", "response":help_msg, "system_action":""}
     else:
         responseDict = ctrl.create_response_for_query(input_msg)
-        jsonString = json.dumps(responseDict)
+    jsonString = json.dumps(responseDict)
     return jsonString
+
 
 @app.route('/', methods=['POST'])
 def dialog_turn():
