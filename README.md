@@ -4,14 +4,14 @@ Project made by Artur Stopa, João Soares and Ricardo Pereira.
 
 
 ### Instalation/Setup
-##### Step 0 - Create env File
+#### Step 0 - Create env File
 Create a .env file with the variables that are in the example. (Given in the labs)
 
 ```
 API_USER=''
 API_PASSWORD=''
 ```
-##### Step 1 - Create a conda environment
+#### Step 1 - Create a conda environment
 ```
 conda create -n myenv python=3.9 ipykernel numpy scipy scikit-learn pandas tqdm jupyter matplotlib gensim flask flask_cors ipympl -c defaults -c conda-forge
 ```
@@ -30,11 +30,11 @@ pip install -r requirements.txt
 cat requirements.txt | xargs -n 1 pip install
 ```
 
-##### Step 2 - Installing PyTorch+HuggingFace+Spacy
+#### Step 2 - Installing PyTorch+HuggingFace+Spacy
 Check lab0 for instructions:
 https://wiki.novasearch.org/wiki/lab_setup
 
-##### Step 3 - Run the program
+#### Step 3 - Run the program
 
 ```
 python app.py
