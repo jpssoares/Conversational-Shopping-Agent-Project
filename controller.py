@@ -119,24 +119,34 @@ def search_products_full_text(qtxt: str):
 def search_products_boolean(qtxt: str):
     try:
         must_part = re.search("must\s+(.+?)\s+should", qtxt).group(1).split(" ")
+    except AttributeError:
+        must_part = []
+    try:
         should_part = re.search("should\s+(.+?)\s+must_not", qtxt).group(1).split(" ")
+    except AttributeError:
+        should_part = []
+    try:
         must_not_part = re.search("must_not\s+(.+?)\s+filter", qtxt).group(1).split(" ")
     except AttributeError:
-        return get_client_search(None)
-    filter_part = qtxt.split(" filter ")[1].split(" ")
-
-    bool_dict = {"must": [], "should": [], "must_not": [], "filter": {"term": {}}}
-
+        must_not_part = []
     try:
+        filter_part = qtxt.split(" filter ")[1].split(" ")
+    except IndexError:
+        filter_part = []
+
+    bool_dict = {"must": [], "should": [], "must_not": []}
+
+    if len(must_part) > 1:
         for i in range(0, len(must_part), 2):
-            bool_dict.get("must").append({"match": {must_part[i]: must_part[i+1]}})
+            bool_dict.get("must").append({"match": {must_part[i]: must_part[i + 1]}})
+    if len(should_part) > 1:
         for i in range(0, len(should_part), 2):
-            bool_dict.get("should").append({"match": {should_part[i]: should_part[i+1]}})
+            bool_dict.get("should").append({"match": {should_part[i]: should_part[i + 1]}})
+    if len(must_not_part) > 1:
         for i in range(0, len(must_not_part), 2):
             bool_dict.get("must_not").append({"match": {must_not_part[i]: must_not_part[i + 1]}})
+    if len(filter_part) > 1:
         bool_dict.get("filter").get("term")[filter_part[0]] = filter_part[1]
-    except IndexError:
-        return get_client_search(None)
 
     print(bool_dict)
     query_denc = {
@@ -148,7 +158,6 @@ def search_products_boolean(qtxt: str):
     }
 
     return get_client_search(query_denc)
-
 
 
 def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3):
@@ -186,21 +195,3 @@ def create_response_for_query(input_query):
         return searching_for_products_with_cross_modal_spaces(input_query)
 
     return None
-    # if len(input_query_parts) == 2:
-    #     if input_query_parts[0] in product_fields:
-    #         """
-    #         Search for Products with Text and Attributes
-    #         <field> <query>
-    #         Example: product_main_colour black
-    #         """
-    #         return search_products_with_text_and_attributes(input_query_parts[1], input_query_parts[0])
-    #     else:
-    #         """
-    #         Searching for Products with Cross-Modal Spaces
-    #         <query_w1> <query_w2>
-    #         Example: black boots
-    #         """
-    #         return searching_for_products_with_cross_modal_spaces(input_query)
-    # else:
-    #     return search_products_boolean(input_query)
-    # return None

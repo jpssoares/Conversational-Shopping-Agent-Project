@@ -27,6 +27,7 @@ help_msg = "Here are some commands you can use:\n" \
     + "Search for Products with Text and Attributes\n<field> <query>\nExample: product_main_colour black\n" \
     + "Searching for Products with Cross-Modal Spaces\n<query_w1> <query_w2>\nExample: black boots\n"
 
+search_type_changed_msg = "The search type was successfully changed"
 
 # Program initiation
 app = Flask(__name__) # create the Flask app
@@ -46,7 +47,7 @@ def interprete_msg(data):
     elif input_msg_parts[0] == "change_search_type":
         if input_msg_parts[1] in ctrl.search_types:
             ctrl.search_used = input_msg_parts[1]
-
+            responseDict = {"has_response": True, "recommendations": "", "response": search_type_changed_msg, "system_action": ""}
     else:
         responseDict = ctrl.create_response_for_query(input_msg)
     jsonString = json.dumps(responseDict)
