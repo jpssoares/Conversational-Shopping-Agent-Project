@@ -113,6 +113,25 @@ def search_products_full_text(qtxt: str):
     return get_client_search(query_denc)
 
 
+def search_products_boolean(qtxt: str):
+    # should field a must field b must_not field c
+    query_list = qtxt.split(" ")
+    bool_dict = {"must": [{"match": {query_list[1]: query_list[2]}}],
+                 "should": [{"match": {query_list[4]: query_list[5]}}],
+                 "must_not": [{"match": {query_list[7]: query_list[8]}}]}
+
+    query_denc = {
+        'size': 5,
+        '_source': product_fields,
+        "query": {
+            "bool": bool_dict
+        }
+    }
+
+    return get_client_search(query_denc)
+
+
+
 def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3):
     model = tt.CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     tokenizer = tt.CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
@@ -155,5 +174,5 @@ def create_response_for_query(input_query):
             """
             return searching_for_products_with_cross_modal_spaces(input_query)
     else:
-        return search_products_full_text(input_query)
+        return search_products_boolean(input_query)
     return None
