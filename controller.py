@@ -67,9 +67,7 @@ def get_client_search(query_denc):
 
     results = [r['_source'] for r in response['hits']['hits']]
     print('\nSearch results:')
-    results
     recommendations = get_recommendations(results)
-
     if len(recommendations) == 0:
         responseDict = {"has_response": True, "recommendations": recommendations,
                         "response": "Sorry, I couldn't find any products that meet your query...", "system_action": ""}
@@ -99,7 +97,6 @@ def search_products_full_text(qtxt: str):
     qtxt = re.sub("\s*(not|no|without)\s*", "-", qtxt)
     qtxt = re.sub("\s*or\s*", "|", qtxt)
     qtxt = re.sub("\s*and\s*|\s+", "+", qtxt)
-    print(qtxt)
     query_denc = {
         'size': 5,
         '_source': product_fields,
