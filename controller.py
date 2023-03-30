@@ -1,13 +1,9 @@
 from opensearchpy import OpenSearch
 from opensearchpy import helpers
 import os
-import torch.nn.functional as F
-
-# from transformers import CLIPProcessor, CLIPModel, CLIPTokenizer
-import transformers as tt
 import re
-
 from dotenv import load_dotenv
+from Encoder import Encoder
 
 load_dotenv()
 
@@ -19,8 +15,8 @@ index_name = "farfetch_images"
 user = os.getenv("API_USER")
 password = os.getenv("API_PASSWORD")
 
-search_used = "full_text"
-search_types = ["full_text", "boolean_search", "text_and_attrs"]
+search_used = "embeddings"
+search_types = ["full_text", "boolean_search", "text_and_attrs", "embeddings"]
 
 product_fields = [
     "product_id",
@@ -50,6 +46,8 @@ client = OpenSearch(
     ssl_assert_hostname=False,
     ssl_show_warn=False,
 )
+
+encoder = Encoder()
 
 
 def get_recommendations(results):
@@ -187,19 +185,14 @@ def search_products_boolean(qtxt: str):
 
 
 def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3):
-    model = tt.CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-    tokenizer = tt.CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
-
-    inputs = tokenizer([search_query], padding=True, return_tensors="pt")
-    text_features = F.normalize(model.get_text_features(**inputs))
-
+    query_emb = encoder.encode(search_query)
     query_denc = {
         "size": size_of_query,
         "_source": product_fields,
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": text_features[0].detach().numpy(),
+                    "vector": query_emb[0].numpy(),
                     "k": 2,
                 }
             }
@@ -221,5 +214,3 @@ def create_response_for_query(input_query):
         )
     else:
         return searching_for_products_with_cross_modal_spaces(input_query)
-
-    return None
