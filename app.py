@@ -1,21 +1,7 @@
 from flask import Flask, request
 from flask_cors import CORS
 import json
-import pprint as pp
-import requests
-import json
-from tqdm import tqdm
-import pprint as pp
-from opensearchpy import OpenSearch
-from opensearchpy import helpers
-from PIL import Image
-import pandas as pd
-import time
-import numpy as np
 import controller as ctrl
-
-# from transformers import CLIPProcessor, CLIPModel
-import transformers as tt
 
 # Program variables
 beginning_msg = "Hello! Welcome to Farfetch! What item are you looking for?"
@@ -33,8 +19,7 @@ help_msg = (
 
 search_type_changed_msg = "The search type was successfully changed"
 
-# Program initiation
-app = Flask(__name__)  # create the Flask app
+app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
 
@@ -78,11 +63,11 @@ def dialog_turn():
     if request.is_json:
         data = request.json
         print(data)
-        print(data.get("utterance"))
-        print(data.get("session_id"))
-        print(data.get("user_action"))
-        print(data.get("interface_selected_product_id"))
-        print(data.get("image"))
+        # print(data.get("utterance"))
+        # print(data.get("session_id"))
+        # print(data.get("user_action"))
+        # print(data.get("interface_selected_product_id"))
+        # print(data.get("image"))
         jsonString = interprete_msg(data)
     return jsonString
 
