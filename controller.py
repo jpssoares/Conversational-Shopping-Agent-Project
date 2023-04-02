@@ -192,7 +192,7 @@ def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": query_emb[0].numpy(),
+                    "vector": query_emb[0].detach().numpy(),
                     "k": 2,
                 }
             }

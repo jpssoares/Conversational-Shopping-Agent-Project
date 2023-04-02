@@ -5,12 +5,13 @@ import torch.nn.functional as F
 
 class Encoder:
     def __init__(self):
-        self.model = transformers.AutoModel.from_pretrained(
-            "sentence-transformers/msmarco-distilbert-base-v2"
+        self.model = transformers.CLIPModel.from_pretrained(
+            "openai/clip-vit-base-patch32"
         )
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(
-            "sentence-transformers/msmarco-distilbert-base-v2"
+        self.tokenizer = transformers.CLIPTokenizer.from_pretrained(
+            "openai/clip-vit-base-patch32"
         )
+        # self.processor = transformers.CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
     def mean_pooling(self, model_output, attention_mask):
         token_embeddings = (
@@ -23,13 +24,9 @@ class Encoder:
             input_mask_expanded.sum(1), min=1e-9
         )
 
-    def encode(self, texts):
-        encoded_input = self.tokenizer(
-            texts, padding=True, truncation=True, return_tensors="pt"
+    def encode(self, query: str):
+        tokenized_query: transformers.tokenization_utils_base.BatchEncoding = (
+            self.tokenizer([query], padding=True, return_tensors="pt")
         )
-        with torch.no_grad():
-            model_output = self.model(**encoded_input, return_dict=True)
-        embeddings = self.mean_pooling(model_output, encoded_input["attention_mask"])
-        embeddings = F.normalize(embeddings, p=2, dim=1)
-
+        embeddings = F.normalize(self.model.get_text_features(**tokenized_query))
         return embeddings
