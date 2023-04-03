@@ -4,6 +4,8 @@ import os
 import re
 from dotenv import load_dotenv
 from Encoder import Encoder
+from itertools import chain
+import spacy
 
 load_dotenv()
 
@@ -48,6 +50,8 @@ client = OpenSearch(
 )
 
 encoder = Encoder()
+nlp = spacy.load("en_core_web_sm")
+negation_words = set(["no", "without"])
 
 
 def get_recommendations(results):
@@ -184,8 +188,55 @@ def search_products_boolean(qtxt: str):
     return get_client_search(query_denc)
 
 
+def negated_tokens(token):
+    descriptors = set(["pobj", "compound", "acomp", "amod", "attr"])
+    if token.text == "without":
+        root_child = next(token.children)
+        negated_tokens = [root_child.text] + [
+            child.text
+            for child in root_child.children
+            if child != token and child.dep_ in descriptors
+        ]
+        return negated_tokens
+    elif token.text == "no" or token.dep_ == "neg":
+        negated_tokens = [token.head.text] + [
+            child.text
+            for child in token.head.children
+            if child != token and child.dep_ in descriptors
+        ]
+        return negated_tokens
+    else:
+        return list()
+
+
 def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3):
-    query_emb = encoder.encode(search_query)
+    try:
+        try:
+            negated_terms = next(
+                (
+                    chain(
+                        [
+                            negated_tokens(tok)
+                            for tok in nlp(search_query)
+                            if tok.dep_ == "neg" or tok.text in negation_words
+                        ]
+                    )
+                )
+            )
+        except StopIteration:
+            negated_terms = set()
+        desired_terms = set(search_query.split()) - set(negated_terms) - negation_words
+        query = " ".join(desired_terms)
+    except Exception as e:
+        print(
+            f"Unexpected error during negation processing: {e}",
+            "Defaulting to raw query.",
+            sep="\n",
+        )
+        query = search_query
+
+    print(f"Searching for: {query}")
+    query_emb = encoder.encode(query)
     query_denc = {
         "size": size_of_query,
         "_source": product_fields,

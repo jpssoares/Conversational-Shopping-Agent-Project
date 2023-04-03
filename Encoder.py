@@ -28,5 +28,6 @@ class Encoder:
         tokenized_query: transformers.tokenization_utils_base.BatchEncoding = (
             self.tokenizer([query], padding=True, return_tensors="pt")
         )
+        print(tokenized_query)
         embeddings = F.normalize(self.model.get_text_features(**tokenized_query))
         return embeddings
