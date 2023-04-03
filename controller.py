@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from Encoder import Encoder
 from itertools import chain
 import spacy
+import pprint as pp
 
 load_dotenv()
 
@@ -225,32 +226,62 @@ def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3
             )
         except StopIteration:
             negated_terms = set()
-        desired_terms = set(search_query.split()) - set(negated_terms) - negation_words
-        query = " ".join(desired_terms)
+        undesired_terms = set(negated_terms)
+        desired_terms = set(search_query.split()) - undesired_terms - negation_words
+        desired_query = " ".join(desired_terms)
+        undesired_query = " ".join(undesired_terms)
     except Exception as e:
         print(
             f"Unexpected error during negation processing: {e}",
             "Defaulting to raw query.",
             sep="\n",
         )
-        query = search_query
+        desired_query = search_query
+        undesired_query = ""
 
-    print(f"Searching for: {query}")
-    query_emb = encoder.encode(query)
-    query_denc = {
-        "size": size_of_query,
+    print(f"Searching for: '{desired_query}' without '{undesired_query}'")
+    desired_query_emb = encoder.encode(desired_query)
+    undesired_query_emb = encoder.encode(undesired_query)
+    desired_query_denc = {
+        "size": 20 + size_of_query,
         "_source": product_fields,
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": query_emb[0].detach().numpy(),
+                    "vector": desired_query_emb[0].detach().numpy(),
+                    "k": 2,
+                }
+            }
+        },
+    }
+    undesired_query_denc = {
+        "size": 20,
+        "_source": product_fields,
+        "query": {
+            "knn": {
+                "combined_embedding": {
+                    "vector": undesired_query_emb[0].detach().numpy(),
                     "k": 2,
                 }
             }
         },
     }
 
-    return get_client_search(query_denc)
+    desired_items = get_client_search(desired_query_denc)
+    undesired_items_ids = [
+        recommendation.get("id", -1)
+        for recommendation in get_client_search(undesired_query_denc).get(
+            "recommendations", list()
+        )
+    ]
+    desired_items["recommendations"] = [
+        recommendation
+        for recommendation in desired_items.get("recommendations", list())
+        if recommendation.get("id", -1) not in undesired_items_ids
+    ][:size_of_query]
+    print(desired_items)
+
+    return desired_items
 
 
 def create_response_for_query(input_query):
