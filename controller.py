@@ -181,9 +181,8 @@ def search_products_boolean(qtxt: str, size_of_query=3):
                 {"match": {must_not_part[i]: must_not_part[i + 1]}}
             )
     if len(filter_part) > 1:
-        bool_dict.get("filter").get("term")[filter_part[0]] = filter_part[1]
+        bool_dict["filter"] = {"term": {filter_part[0]: filter_part[1]}}
 
-    print(bool_dict)
     query_denc = {"size": size_of_query, "_source": product_fields, "query": {"bool": bool_dict}}
 
     return get_client_search(query_denc)
