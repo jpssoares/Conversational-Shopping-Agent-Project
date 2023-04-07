@@ -117,12 +117,12 @@ def search_products_with_text_and_attributes(
     return get_client_search(query_denc)
 
 
-def search_products_full_text(qtxt: str):
-    qtxt = re.sub("\s*(not|no|without)\s*", "-", qtxt)
-    qtxt = re.sub("\s*or\s*", "|", qtxt)
-    qtxt = re.sub("\s*and\s*|\s+", "+", qtxt)
+def search_products_full_text(qtxt: str, size_of_query=3):
+    qtxt = re.sub("\s*(not|no|without)\s+", "-", qtxt)
+    qtxt = re.sub("\s*or\s+", "|", qtxt)
+    qtxt = re.sub("\s*and\s+|\s+", "+", qtxt)
     query_denc = {
-        "size": 5,
+        "size": size_of_query,
         "_source": product_fields,
         "query": {
             "simple_query_string": {
@@ -147,7 +147,7 @@ def search_products_full_text(qtxt: str):
     return get_client_search(query_denc)
 
 
-def search_products_boolean(qtxt: str):
+def search_products_boolean(qtxt: str, size_of_query=3):
     try:
         must_part = re.search("must\s+(.+?)\s+should", qtxt).group(1).split(" ")
     except AttributeError:
@@ -184,7 +184,7 @@ def search_products_boolean(qtxt: str):
         bool_dict.get("filter").get("term")[filter_part[0]] = filter_part[1]
 
     print(bool_dict)
-    query_denc = {"size": 5, "_source": product_fields, "query": {"bool": bool_dict}}
+    query_denc = {"size": size_of_query, "_source": product_fields, "query": {"bool": bool_dict}}
 
     return get_client_search(query_denc)
 

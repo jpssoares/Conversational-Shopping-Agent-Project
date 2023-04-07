@@ -18,6 +18,7 @@ help_msg = (
 )
 
 search_type_changed_msg = "The search type was successfully changed"
+search_type_change_error = "That search type doesn't exist...\nTry another one"
 
 app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
@@ -50,6 +51,13 @@ def interprete_msg(data):
                 "has_response": True,
                 "recommendations": "",
                 "response": search_type_changed_msg,
+                "system_action": "",
+            }
+        else:
+            responseDict = {
+                "has_response": True,
+                "recommendations": "",
+                "response": search_type_change_error,
                 "system_action": "",
             }
     else:
