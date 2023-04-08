@@ -39,6 +39,13 @@ product_fields = [
     "outfits_products",
 ]
 
+error_search = {
+        "has_response": True,
+        "recommendations": None,
+        "response": "Sorry, I couldn't find any products that meet your query...",
+        "system_action": "",
+}
+
 client = OpenSearch(
     hosts=[{"host": host, "port": port}],
     http_compress=True,
@@ -55,6 +62,8 @@ nlp = spacy.load("en_core_web_sm")
 negation_words = set(["no", "without"])
 
 
+
+    
 def get_recommendations(results):
     recommendations = []
 
@@ -88,12 +97,7 @@ def get_client_search(query_denc):
     print("\nSearch results:")
     recommendations = get_recommendations(results)
     if len(recommendations) == 0 or query_denc is None:
-        responseDict = {
-            "has_response": True,
-            "recommendations": None,
-            "response": "Sorry, I couldn't find any products that meet your query...",
-            "system_action": "",
-        }
+        return error_search
     else:
         responseDict = {
             "has_response": True,
@@ -106,14 +110,34 @@ def get_client_search(query_denc):
 
 
 def search_products_with_text_and_attributes(
-    qtxt, search_field="product_main_colour", size_of_query=3
+    qtxt_array, size_of_query=3
 ):
+    # verify that array has even len
+    if len(qtxt_array)%2!=0:
+        return error_search
+    
+    result_query = ""
+    
+    for idx, value in enumerate(qtxt_array):
+        if idx%2!=0:
+            continue
+        qtxt = qtxt_array[idx+1]
+
+        if result_query != "":
+            result_query = result_query + " AND "
+        
+        result_query = result_query + value + ":" + qtxt_array[idx+1]
+
     query_denc = {
         "size": size_of_query,
         "_source": product_fields,
-        "query": {"multi_match": {"query": qtxt, "fields": [search_field]}},
+        "query": {
+            "query_string": {
+                "query": result_query
+            }
+        }
     }
-
+    
     return get_client_search(query_denc)
 
 
@@ -291,7 +315,7 @@ def create_response_for_query(input_query):
         return search_products_boolean(input_query)
     elif search_used == "text_and_attrs":
         return search_products_with_text_and_attributes(
-            input_query_parts[0], input_query_parts[1]
+            input_query_parts
         )
     else:
         return searching_for_products_with_cross_modal_spaces(input_query)
