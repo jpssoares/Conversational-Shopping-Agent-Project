@@ -2,6 +2,9 @@ import transformers
 import torch
 import torch.nn.functional as F
 
+print(f"Transformers version {transformers.__version__}")
+print(f" PyTorch version {torch.__version__}")
+
 
 class Encoder:
     def __init__(self):
@@ -14,9 +17,7 @@ class Encoder:
         # self.processor = transformers.CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
     def mean_pooling(self, model_output, attention_mask):
-        token_embeddings = (
-            model_output.last_hidden_state
-        )  # First element of model_output contains all token embeddings
+        token_embeddings = model_output.last_hidden_state
         input_mask_expanded = (
             attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         )

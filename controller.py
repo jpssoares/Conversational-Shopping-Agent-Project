@@ -1,16 +1,13 @@
 from opensearchpy import OpenSearch
-from opensearchpy import helpers
 import os
 import re
 from dotenv import load_dotenv
 from Encoder import Encoder
 from itertools import chain
 import spacy
-import pprint as pp
 
 load_dotenv()
 
-# Program variables
 host = "api.novasearch.org"
 port = 443
 index_name = "farfetch_images"
@@ -207,7 +204,11 @@ def search_products_boolean(qtxt: str, size_of_query=3):
     if len(filter_part) > 1:
         bool_dict["filter"] = {"term": {filter_part[0]: filter_part[1]}}
 
-    query_denc = {"size": size_of_query, "_source": product_fields, "query": {"bool": bool_dict}}
+    query_denc = {
+        "size": size_of_query,
+        "_source": product_fields,
+        "query": {"bool": bool_dict},
+    }
 
     return get_client_search(query_denc)
 
@@ -262,7 +263,7 @@ def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3
         desired_query = search_query
         undesired_query = ""
 
-    print(f"Searching for: '{desired_query}' without '{undesired_query}'")
+    print(f"Desired query: '{desired_query}'", f"without '{undesired_query}'", sep="\n")
     desired_query_emb = encoder.encode(desired_query)
     undesired_query_emb = encoder.encode(undesired_query)
     desired_query_denc = {
@@ -307,6 +308,25 @@ def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3
     return desired_items
 
 
+def embeddings_search(input_query, size_of_query=3):
+    query_emb = encoder.encode(input_query)
+    query_denc = {
+        "size": size_of_query,
+        "_source": product_fields,
+        "query": {
+            "knn": {
+                "combined_embedding": {
+                    "vector": query_emb[0].detach().numpy(),
+                    "k": 2,
+                }
+            }
+        },
+    }
+    desired_items = get_client_search(query_denc)
+
+    return desired_items
+
+
 def create_response_for_query(input_query):
     input_query_parts = input_query.split(" ")
     if search_used == "full_text":
@@ -318,4 +338,4 @@ def create_response_for_query(input_query):
             input_query_parts
         )
     else:
-        return searching_for_products_with_cross_modal_spaces(input_query)
+        return embeddings_search(input_query)

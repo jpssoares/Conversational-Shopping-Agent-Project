@@ -71,13 +71,8 @@ def dialog_turn():
     if request.is_json:
         data = request.json
         print(data)
-        # print(data.get("utterance"))
-        # print(data.get("session_id"))
-        # print(data.get("user_action"))
-        # print(data.get("interface_selected_product_id"))
-        # print(data.get("image"))
         jsonString = interprete_msg(data)
     return jsonString
 
 
-app.run(port=4000)  # run app in debug mode on port 5000
+app.run(port=4000)
