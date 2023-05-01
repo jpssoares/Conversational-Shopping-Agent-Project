@@ -1,9 +1,13 @@
+import base64
+import io
+
 from opensearchpy import OpenSearch
 import os
 import re
 from dotenv import load_dotenv
 from Encoder import Encoder
 from itertools import chain
+from PIL import Image
 import spacy
 
 load_dotenv()
@@ -15,8 +19,16 @@ index_name = "farfetch_images"
 user = os.getenv("API_USER")
 password = os.getenv("API_PASSWORD")
 
-search_used = "embeddings"
-search_types = ["full_text", "boolean_search", "text_and_attrs", "embeddings"]
+search_used = "text_embeddings"
+
+search_types = [
+    "full_text",
+    "boolean_search",
+    "text_and_attrs",
+    "text_embeddings",
+    "image_embeddings",
+    "cross_modal_embeddings"
+]
 
 product_fields = [
     "product_id",
@@ -58,9 +70,6 @@ encoder = Encoder()
 nlp = spacy.load("en_core_web_sm")
 negation_words = set(["no", "without"])
 
-
-
-    
 def get_recommendations(results):
     recommendations = []
 
@@ -89,9 +98,10 @@ def create_new_recommendation(brand="None", desc="None", id="None", img_path="No
 
 def get_client_search(query_denc):
     response = client.search(body=query_denc, index=index_name)
-
     results = [r["_source"] for r in response["hits"]["hits"]]
+
     print("\nSearch results:")
+    print(results)
     recommendations = get_recommendations(results)
     if len(recommendations) == 0 or query_denc is None:
         return error_search
@@ -308,7 +318,7 @@ def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3
     return desired_items
 
 
-def embeddings_search(input_query, size_of_query=3):
+def text_embeddings_search(input_query, size_of_query=3):
     query_emb = encoder.encode(input_query)
     query_denc = {
         "size": size_of_query,
@@ -327,15 +337,49 @@ def embeddings_search(input_query, size_of_query=3):
     return desired_items
 
 
-def create_response_for_query(input_query):
-    input_query_parts = input_query.split(" ")
+def decode_img(input_image_query):
+    q_image = base64.b64decode(input_image_query.split(",")[1])
+    image = Image.open(io.BytesIO(q_image))
+    return image
+
+def image_embeddings_search(input_image_query):
+    img = decode_img(input_image_query)
+    emb_img = encoder.process_image(img)
+
+    query_denc = {
+        'size': 3,
+        '_source': product_fields,
+        "query": {
+            "knn": {
+                "image_embedding": {
+                    "vector": emb_img[0].detach().numpy(),
+                    "k": 2
+                }
+            }
+        }
+    }
+
+    return get_client_search(query_denc)
+
+def cross_modal_search(input_text_query, input_image_query):
+    pass
+
+
+def create_response_for_query(input_text_query, input_image_query):
+    input_query_parts = input_text_query.split(" ")
     if search_used == "full_text":
-        return search_products_full_text(input_query)
+        return search_products_full_text(input_text_query)
     elif search_used == "boolean_search":
-        return search_products_boolean(input_query)
+        return search_products_boolean(input_text_query)
     elif search_used == "text_and_attrs":
         return search_products_with_text_and_attributes(
             input_query_parts
         )
     else:
-        return embeddings_search(input_query)
+        if input_image_query == "" or input_image_query is None:
+            return text_embeddings_search(input_text_query)
+        else:
+            if input_text_query == "":
+                return image_embeddings_search(input_image_query)
+            else:
+                return cross_modal_search(input_text_query, input_image_query)

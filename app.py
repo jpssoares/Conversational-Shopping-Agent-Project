@@ -27,10 +27,12 @@ cors = CORS(app)
 
 def interprete_msg(data):
     input_msg = data.get("utterance")
+    input_img = data.get("file")
+
     input_msg_parts = input_msg.split(" ")
     jsonString = ""
 
-    if input_msg == "Hi!":
+    if input_msg.lower() == "Hi!":
         responseDict = {
             "has_response": True,
             "recommendations": "",
@@ -61,7 +63,7 @@ def interprete_msg(data):
                 "system_action": "",
             }
     else:
-        responseDict = ctrl.create_response_for_query(input_msg)
+        responseDict = ctrl.create_response_for_query(input_msg, input_img)
     jsonString = json.dumps(responseDict)
     return jsonString
 

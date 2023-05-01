@@ -14,7 +14,7 @@ class Encoder:
         self.tokenizer = transformers.CLIPTokenizer.from_pretrained(
             "openai/clip-vit-base-patch32"
         )
-        # self.processor = transformers.CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        self.processor = transformers.CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
     def mean_pooling(self, model_output, attention_mask):
         token_embeddings = model_output.last_hidden_state
@@ -32,3 +32,10 @@ class Encoder:
         print(tokenized_query)
         embeddings = F.normalize(self.model.get_text_features(**tokenized_query))
         return embeddings
+
+    def process_image(self, image):
+        processed_image = self.processor(
+            images=image, return_tensors="pt", padding=True
+        )
+        embeddings_image = F.normalize(self.model.get_image_features(**processed_image))
+        return embeddings_image
