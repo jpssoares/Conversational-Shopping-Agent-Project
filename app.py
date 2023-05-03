@@ -10,11 +10,11 @@ retry_msg = (
 )
 
 help_msg = (
-    "Here are some commands you can use:\n"
-    + "Change the search type: change_search_type <search_type> (full_text, boolean_search, text_and_attrs, emb_search)\n"
-    + "Search for product using boolean filtering: must <field1> a ... <field2> b should <field3> c must_not <field4> d filter <field5> e\n"
-    + "Search for Products with Text and Attributes\n<field> <query>\nExample: product_main_colour black\n"
-    + "Searching for Products with Cross-Modal Spaces\n<query_w1> <query_w2>\nExample: black boots\n"
+        "Here are some commands you can use:\n"
+        + "Change the search type: change_search_type <search_type> (full_text, boolean_search, text_and_attrs, emb_search)\n"
+        + "Search for product using boolean filtering: must <field1> a ... <field2> b should <field3> c must_not <field4> d filter <field5> e\n"
+        + "Search for Products with Text and Attributes\n<field> <query>\nExample: product_main_colour black\n"
+        + "Searching for Products with Cross-Modal Spaces\n<query_w1> <query_w2>\nExample: black boots\n"
 )
 
 search_type_changed_msg = "The search type was successfully changed"
@@ -72,7 +72,7 @@ def interprete_msg(data):
 def dialog_turn():
     if request.is_json:
         data = request.json
-        print(data)
+        # print(data)
         jsonString = interprete_msg(data)
     return jsonString
 

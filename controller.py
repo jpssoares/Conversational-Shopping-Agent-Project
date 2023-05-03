@@ -362,7 +362,23 @@ def image_embeddings_search(input_image_query):
     return get_client_search(query_denc)
 
 def cross_modal_search(input_text_query, input_image_query):
-    pass
+    image = decode_img(input_image_query)
+    cross_modal_embs = encoder.encode_cross_modal(input_text_query, image)
+
+    query_denc = {
+        'size': 3,
+        '_source': product_fields,
+        "query": {
+            "knn": {
+                "combined_embedding": {
+                    "vector": cross_modal_embs,
+                    "k": 2
+                }
+            }
+        }
+    }
+
+    return get_client_search(query_denc)
 
 
 def create_response_for_query(input_text_query, input_image_query):

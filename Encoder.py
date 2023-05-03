@@ -1,3 +1,4 @@
+import numpy as np
 import transformers
 import torch
 import torch.nn.functional as F
@@ -29,7 +30,7 @@ class Encoder:
         tokenized_query: transformers.tokenization_utils_base.BatchEncoding = (
             self.tokenizer([query], padding=True, return_tensors="pt")
         )
-        print(tokenized_query)
+
         embeddings = F.normalize(self.model.get_text_features(**tokenized_query))
         return embeddings
 
@@ -39,3 +40,12 @@ class Encoder:
         )
         embeddings_image = F.normalize(self.model.get_image_features(**processed_image))
         return embeddings_image
+
+    def encode_cross_modal(self, text, image):
+        text_emb = self.encode(text)[0].detach().numpy().tolist()
+        img_emb = self.process_image(image)[0].detach().numpy().tolist()
+
+        combined_emb = F.normalize(torch.tensor(np.array(img_emb) + np.array(text_emb)), dim=0).to(torch.device('cpu')).numpy()
+        return combined_emb
+
+
