@@ -68,7 +68,7 @@ client = OpenSearch(
 
 encoder = Encoder()
 nlp = spacy.load("en_core_web_sm")
-negation_words = set(["no", "without"])
+negation_words = set(["no", "without", "not", "none", "neither", "nor", "never", "nobody", "nothing", "nowhere"])
 
 def get_recommendations(results):
     recommendations = []
@@ -244,7 +244,7 @@ def negated_tokens(token):
         return list()
 
 
-def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3):
+def text_embeddings_search(search_query, size_of_query=3):
     try:
         try:
             negated_terms = next(
@@ -318,29 +318,11 @@ def searching_for_products_with_cross_modal_spaces(search_query, size_of_query=3
     return desired_items
 
 
-def text_embeddings_search(input_query, size_of_query=3):
-    query_emb = encoder.encode(input_query)
-    query_denc = {
-        "size": size_of_query,
-        "_source": product_fields,
-        "query": {
-            "knn": {
-                "combined_embedding": {
-                    "vector": query_emb[0].detach().numpy(),
-                    "k": 2,
-                }
-            }
-        },
-    }
-    desired_items = get_client_search(query_denc)
-
-    return desired_items
-
-
 def decode_img(input_image_query):
     q_image = base64.b64decode(input_image_query.split(",")[1])
     image = Image.open(io.BytesIO(q_image))
     return image
+
 
 def image_embeddings_search(input_image_query):
     img = decode_img(input_image_query)
@@ -362,23 +344,80 @@ def image_embeddings_search(input_image_query):
     return get_client_search(query_denc)
 
 def cross_modal_search(input_text_query, input_image_query):
-    image = decode_img(input_image_query)
-    cross_modal_embs = encoder.encode_cross_modal(input_text_query, image)
+    try:
+        try:
+            negated_terms = next(
+                (
+                    chain(
+                        [
+                            negated_tokens(tok)
+                            for tok in nlp(input_text_query)
+                            if tok.dep_ == "neg" or tok.text in negation_words
+                        ]
+                    )
+                )
+            )
+        except StopIteration:
+            negated_terms = set()
+        undesired_terms = set(negated_terms)
+        desired_terms = set(input_text_query.split()) - undesired_terms - negation_words
+        desired_query = " ".join(desired_terms)
+        undesired_query = " ".join(undesired_terms)
+    except Exception as e:
+        print(
+            f"Unexpected error during negation processing: {e}",
+            "Defaulting to raw query.",
+            sep="\n",
+        )
+        desired_query = input_text_query
+        undesired_query = ""
 
-    query_denc = {
-        'size': 3,
+    print(f"Desired query: '{desired_query}'", f"without '{undesired_query}'", sep="\n")
+    image = decode_img(input_image_query)
+
+    cross_modal_embs_desired = encoder.encode_cross_modal(desired_query, image)
+    cross_modal_embs_undesired = encoder.encode_cross_modal(undesired_query, image)
+
+    desired_query_denc = {
+        "size": 20 + 3,
+        "_source": product_fields,
+        "query": {
+            "knn": {
+                "combined_embedding": {
+                    "vector": cross_modal_embs_desired,
+                    "k": 2,
+                }
+            }
+        },
+    }
+    undesired_query_denc = {
+        'size': 20,
         '_source': product_fields,
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": cross_modal_embs,
+                    "vector": cross_modal_embs_undesired,
                     "k": 2
                 }
             }
         }
     }
 
-    return get_client_search(query_denc)
+    desired_items = get_client_search(desired_query_denc)
+    undesired_items_ids = [
+        recommendation.get("id", -1)
+        for recommendation in get_client_search(undesired_query_denc).get(
+            "recommendations", list()
+        )
+    ]
+    desired_items["recommendations"] = [
+        recommendation
+        for recommendation in desired_items.get("recommendations", list())
+        if recommendation.get("id", -1) not in undesired_items_ids
+        ][:3]
+    print(desired_items)
+
+    return desired_items
 
 
 def create_response_for_query(input_text_query, input_image_query):
