@@ -259,8 +259,9 @@ def text_embeddings_search(search_query, size_of_query=3):
                 )
             )
         except StopIteration:
-            negated_terms = set()
-        undesired_terms = set(negated_terms)
+            negated_terms = []
+        stop_words = [tok.text for tok in nlp(search_query) if tok.is_stop]
+        undesired_terms = set(negated_terms + stop_words)
         desired_terms = set(search_query.split()) - undesired_terms - negation_words
         desired_query = " ".join(desired_terms)
         undesired_query = " ".join(undesired_terms)
@@ -358,8 +359,9 @@ def cross_modal_search(input_text_query, input_image_query):
                 )
             )
         except StopIteration:
-            negated_terms = set()
-        undesired_terms = set(negated_terms)
+            negated_terms = []
+        stop_words = [tok.text for tok in nlp(input_text_query) if tok.is_stop]
+        undesired_terms = set(negated_terms + stop_words)
         desired_terms = set(input_text_query.split()) - undesired_terms - negation_words
         desired_query = " ".join(desired_terms)
         undesired_query = " ".join(undesired_terms)
