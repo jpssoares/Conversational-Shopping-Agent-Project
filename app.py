@@ -19,6 +19,7 @@ help_msg = (
 
 search_type_changed_msg = "The search type was successfully changed"
 search_type_change_error = "That search type doesn't exist...\nTry another one"
+fst_message = True
 
 app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
@@ -26,13 +27,16 @@ cors = CORS(app)
 
 
 def interprete_msg(data):
+    global fst_message
     input_msg = data.get("utterance")
     input_img = data.get("file")
 
     input_msg_parts = input_msg.split(" ")
     jsonString = ""
 
-    if input_msg.lower() == "Hi!":
+    if input_msg.lower() in "hi!" or fst_message:
+        fst_message = False
+
         responseDict = {
             "has_response": True,
             "recommendations": "",
