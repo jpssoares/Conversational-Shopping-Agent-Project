@@ -34,7 +34,7 @@ def interprete_msg(data):
     input_msg_parts = input_msg.split(" ")
     jsonString = ""
 
-    if input_msg.lower() in "hi!" or fst_message:
+    if input_msg == "Hi!":
         fst_message = False
 
         responseDict = {
