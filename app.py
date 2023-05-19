@@ -3,14 +3,17 @@ from flask_cors import CORS
 import json
 import source.controller as ctrl
 import source.dialog as dialog
+import openai
+import os
 
 # Program variables
+openai.api_key = ""
 beginning_msg = "Hello! Welcome to Farfetch! What item are you looking for?"
 goodbye_msg = "Goodbye! If you need anything, I'll be here..."
 retry_msg = (
     "Sorry, I did not understand what you were trying to tell me... can we try again?"
 )
-
+error_msg = "Sorry can't help you with that. Please try again..."
 help_msg = (
         "Here are some commands you can use:\n"
         + "Change the search type: change_search_type <search_type> (full_text, boolean_search, text_and_attrs, emb_search)\n"
@@ -26,6 +29,20 @@ fst_message = True
 app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
+
+def run_with_gpt_setup():
+    selected = input("Would you like to run using GPT-3? yes/[no] ")
+    if selected.upper() == "YES":
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def get_gpt_answer(msg="What is Farfetch?"):
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", # this is "ChatGPT" $0.002 per 1k tokens
+        messages=[{"role": "user", "content": msg}]
+    )
+
+    reply_content = completion.choices[0].message.content
+    return reply_content
 
 
 def interprete_msg(data):
@@ -57,6 +74,7 @@ def interprete_msg(data):
             }
 
     intent, keys, values = dialog.interpreter(input_msg)
+    print(intent)
 
     if intent == "user_request_get_products" or (input_msg=="" and input_img!=None):
         responseDict = ctrl.create_response_for_query(input_msg, input_img, keys, values)
@@ -85,7 +103,27 @@ def interprete_msg(data):
             "response": goodbye_msg,
             "system_action": "",
         }
+    
+    elif intent in dialog.useful_intent_keys:
+       print("debug")
+       gpt_answer = get_gpt_answer(input_msg)
+       responseDict = {
+            "has_response": True,
+            "recommendations": "",
+            "response": gpt_answer,
+            "system_action": "",
+        }
 
+    else:
+        fst_message = False
+        responseDict = {
+            "has_response": True,
+            "recommendations": "",
+            "response": error_msg,
+            "system_action": "",
+        }
+    
+    
 
     jsonString = json.dumps(responseDict)
     return jsonString
@@ -99,5 +137,5 @@ def dialog_turn():
         jsonString = interprete_msg(data)
     return jsonString
 
-
+run_with_gpt_setup()
 app.run(port=4000)

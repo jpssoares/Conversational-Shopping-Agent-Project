@@ -3,6 +3,20 @@ from transformers import AutoTokenizer
 import source.config as config
 import transformers
 
+useful_intent_keys = [
+ "user_neutral_are_you_a_bot",
+ "user_neutral_do_you_have_pets",
+ "user_neutral_fun_fact",
+ "user_neutral_how_old_are_you",
+ "user_neutral_meaning_of_life",
+ "user_neutral_tell_joke",
+ "user_neutral_what_are_your_hobbies",
+ "user_neutral_what_is_your_name",
+ "user_neutral_where_are_you_from",
+ "user_neutral_who_do_you_work_for",
+ "user_neutral_who_made_you"
+]
+
 # Set the transformer verbosity to hide the annoying warnings
 transformers.logging.set_verbosity_error()
 
@@ -23,7 +37,7 @@ def add_special_tokens_to_model_and_tokenizer(model, tokenizer, special_tokens, 
                 tokenizer.add_tokens(special_token)
         return
 
-print("Loaded early iFetch slot filling and intent detector...")
+#print("Loaded early iFetch slot filling and intent detector...")
     
 add_special_tokens_to_model_and_tokenizer(
     None,
