@@ -1,10 +1,12 @@
 from flask import Flask, request
 from flask_cors import CORS
 import json
-import controller as ctrl
+import source.controller as ctrl
+import source.dialog as dialog
 
 # Program variables
 beginning_msg = "Hello! Welcome to Farfetch! What item are you looking for?"
+goodbye_msg = "Goodbye! If you need anything, I'll be here..."
 retry_msg = (
     "Sorry, I did not understand what you were trying to tell me... can we try again?"
 )
@@ -31,26 +33,13 @@ def interprete_msg(data):
     input_msg = data.get("utterance")
     input_img = data.get("file")
 
-    input_msg_parts = input_msg.split(" ")
+
     jsonString = ""
 
-    if input_msg == "Hi!":
-        fst_message = False
-
-        responseDict = {
-            "has_response": True,
-            "recommendations": "",
-            "response": beginning_msg,
-            "system_action": "",
-        }
-    elif input_msg.lower() == "help":
-        responseDict = {
-            "has_response": True,
-            "recommendations": "",
-            "response": help_msg,
-            "system_action": "",
-        }
-    elif input_msg_parts[0] == "change_search_type":
+    # in order to maintain the functionality from the first part,
+    # we leave the change_search_type as is
+    input_msg_parts = input_msg.split(" ")
+    if input_msg_parts[0] == "change_search_type":
         if input_msg_parts[1] in ctrl.search_types:
             ctrl.search_used = input_msg_parts[1]
             responseDict = {
@@ -66,8 +55,38 @@ def interprete_msg(data):
                 "response": search_type_change_error,
                 "system_action": "",
             }
-    else:
-        responseDict = ctrl.create_response_for_query(input_msg, input_img)
+
+    intent, keys, values = dialog.interpreter(input_msg)
+
+    if intent == "user_request_get_products" or (input_msg=="" and input_img!=None):
+        responseDict = ctrl.create_response_for_query(input_msg, input_img, keys, values)
+
+    elif intent == "user_neutral_greeting":
+        fst_message = False
+        responseDict = {
+            "has_response": True,
+            "recommendations": "",
+            "response": beginning_msg,
+            "system_action": "",
+        }
+
+    elif intent == "user_neutral_what_can_i_ask_you":
+        responseDict = {
+            "has_response": True,
+            "recommendations": "",
+            "response": help_msg,
+            "system_action": "",
+        }
+    
+    elif intent == "user_neutral_goodbye":
+        responseDict = {
+            "has_response": True,
+            "recommendations": "",
+            "response": goodbye_msg,
+            "system_action": "",
+        }
+
+
     jsonString = json.dumps(responseDict)
     return jsonString
 
