@@ -10,7 +10,9 @@ Create a .env file with the variables that are in the example. (Given in the lab
 ```
 API_USER=''
 API_PASSWORD=''
+OPENAI_API_KEY=''
 ```
+Note: If you don't have a Open AI API key, you can run the program without GPT. Everything that isn't a greeting or a recognized intent is treated as OOS(out of scope). 
 #### Step 1 - Create a conda environment
 ```
 conda create -n myenv python=3.9 ipykernel numpy scipy scikit-learn pandas tqdm jupyter matplotlib gensim flask flask_cors ipympl -c defaults -c conda-forge
@@ -34,7 +36,10 @@ cat requirements.txt | xargs -n 1 pip install
 Check lab0 for instructions:
 https://wiki.novasearch.org/wiki/lab_setup
 
-#### Step 3 - Run the program
+### Step 3 - Import the trained-models folder(for the dialog system)
+Get the folder from here:
+https://drive.google.com/file/d/1VGHkzIzag0bXj4wdD5DD1CTjYU4Fs54D/view
+#### Step 4 - Run the program
 
 ```
 python app.py
