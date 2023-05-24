@@ -3,7 +3,7 @@ from transformers import AutoTokenizer
 import source.config as config
 import transformers
 
-useful_intent_keys = [
+chat_intent_keys = [
  "user_neutral_are_you_a_bot",
  "user_neutral_do_you_have_pets",
  "user_neutral_fun_fact",
@@ -16,6 +16,14 @@ useful_intent_keys = [
  "user_neutral_who_do_you_work_for",
  "user_neutral_who_made_you"
 ]
+
+qa_intent_keys = [
+ 'user_qa_check_information',
+ 'user_qa_product_composition',
+ 'user_qa_product_description',
+ 'user_qa_product_information',
+ 'user_qa_product_measurement'
+ ]
 
 # Set the transformer verbosity to hide the annoying warnings
 transformers.logging.set_verbosity_error()

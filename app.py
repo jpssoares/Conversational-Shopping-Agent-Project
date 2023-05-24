@@ -26,6 +26,8 @@ search_type_changed_msg = "The search type was successfully changed"
 search_type_change_error = "That search type doesn't exist...\nTry another one"
 fst_message = True
 
+last_results = None
+
 app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
@@ -76,8 +78,17 @@ def interprete_msg(data):
     intent, keys, values = dialog.interpreter(input_msg)
     print(intent)
 
+    # debug
+    if input_msg =="repeat":
+        responseDict = {
+            "has_response": True,
+            "recommendations": last_results,
+            "response": "Here are the items...",
+            "system_action": "",
+        }
+
     if intent == "user_request_get_products" or (input_msg=="" and input_img!=None):
-        responseDict = ctrl.create_response_for_query(input_msg, input_img, keys, values)
+        responseDict, last_results = ctrl.create_response_for_query(input_msg, input_img, keys, values)
 
     elif intent == "user_neutral_greeting":
         fst_message = False
@@ -104,8 +115,7 @@ def interprete_msg(data):
             "system_action": "",
         }
     
-    elif intent in dialog.useful_intent_keys:
-       print("debug")
+    elif intent in dialog.chat_intent_keys:
        gpt_answer = get_gpt_answer(input_msg)
        responseDict = {
             "has_response": True,
@@ -113,6 +123,10 @@ def interprete_msg(data):
             "response": gpt_answer,
             "system_action": "",
         }
+    
+    elif intent in dialog.qa_intent_keys:
+       # TODO
+       return
 
     else:
         fst_message = False

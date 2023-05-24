@@ -113,7 +113,7 @@ def get_client_search(query_denc):
             "system_action": "",
         }
 
-    return responseDict
+    return responseDict, recommendations
 
 
 def search_products_with_text_and_attributes(
@@ -302,7 +302,7 @@ def text_embeddings_search(search_query, size_of_query=3):
         },
     }
 
-    desired_items = get_client_search(desired_query_denc)
+    desired_items, _ = get_client_search(desired_query_denc)
     undesired_items_ids = [
         recommendation.get("id", -1)
         for recommendation in get_client_search(undesired_query_denc).get(
@@ -314,9 +314,9 @@ def text_embeddings_search(search_query, size_of_query=3):
         for recommendation in desired_items.get("recommendations", list())
         if recommendation.get("id", -1) not in undesired_items_ids
     ][:size_of_query]
-    print(desired_items)
+    #print(desired_items)
 
-    return desired_items
+    return desired_items, desired_items["recommendations"]
 
 
 def decode_img(input_image_query):
@@ -419,7 +419,7 @@ def cross_modal_search(input_text_query, input_image_query):
         ][:3]
     print(desired_items)
 
-    return desired_items
+    return desired_items, desired_items["recommendations"]
 
 
 def create_response_for_query(input_text_query, input_image_query, keys, values):
