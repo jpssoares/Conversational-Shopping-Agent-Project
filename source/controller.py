@@ -305,7 +305,7 @@ def text_embeddings_search(search_query, size_of_query=3):
     desired_items, _ = get_client_search(desired_query_denc)
     undesired_items_ids = [
         recommendation.get("id", -1)
-        for recommendation in get_client_search(undesired_query_denc).get(
+        for recommendation in get_client_search(undesired_query_denc)[0].get(
             "recommendations", list()
         )
     ]

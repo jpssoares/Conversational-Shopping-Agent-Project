@@ -67,3 +67,6 @@ def interpreter(msg="find me a black suit please"):
         values.append(value)
 
     return intent, keys, values
+
+def get_qa_answer():
+    return ""

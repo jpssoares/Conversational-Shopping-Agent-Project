@@ -49,6 +49,7 @@ def get_gpt_answer(msg="What is Farfetch?"):
 
 def interprete_msg(data):
     global fst_message
+    global last_results
     input_msg = data.get("utterance")
     input_img = data.get("file")
 
@@ -78,17 +79,9 @@ def interprete_msg(data):
     intent, keys, values = dialog.interpreter(input_msg)
     print(intent)
 
-    # debug
-    if input_msg =="repeat":
-        responseDict = {
-            "has_response": True,
-            "recommendations": last_results,
-            "response": "Here are the items...",
-            "system_action": "",
-        }
-
     if intent == "user_request_get_products" or (input_msg=="" and input_img!=None):
         responseDict, last_results = ctrl.create_response_for_query(input_msg, input_img, keys, values)
+        print(last_results[0])
 
     elif intent == "user_neutral_greeting":
         fst_message = False
@@ -125,8 +118,12 @@ def interprete_msg(data):
         }
     
     elif intent in dialog.qa_intent_keys:
-       # TODO
-       return
+       responseDict = {
+            "has_response": True,
+            "recommendations": "",
+            "response": dialog.get_qa_answer(),
+            "system_action": "",
+        }
 
     else:
         fst_message = False
