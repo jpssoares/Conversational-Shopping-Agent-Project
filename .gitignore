@@ -1,4 +1,5 @@
 **/__pycache__
 **/.env
 trained-models/**
+/.vscode
 /.ipynb_checkpoints
