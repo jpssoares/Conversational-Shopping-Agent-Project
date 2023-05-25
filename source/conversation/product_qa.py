@@ -16,14 +16,6 @@ def word_for_position(pos):
     else:
         return str(pos) + "th"
 
-qa_intent_keys = [
- 'user_qa_check_information',
- 'user_qa_product_composition',
- 'user_qa_product_description',
- 'user_qa_product_information',
- 'user_qa_product_measurement'
- ]
-
 def build_answer_based_on_intent(elem, intent, result):
 
     if intent == 'user_qa_product_measurement':
@@ -45,7 +37,7 @@ def get_qa_answer(intent, results, input_msg):
     
     # first get the element that the user wants
     gpt_answer = gpt.get_gpt_answer(get_elem_prompt.format(input=input_msg)).replace("\'","\"")
-    print(gpt_answer)
+    #print(gpt_answer)
     elem_json = json.loads(gpt_answer)
     elem = elem_json['element']
 
