@@ -25,6 +25,9 @@ qa_intent_keys = [
  'user_qa_product_measurement'
  ]
 
+get_elem_prompt = "I am building a dialog state tracking machine, and my model has a slot_key named \'element\'. \'element\' represent the position of the element in a given sequence. For example, \'what is the brand of the third product?\' will give me a value for \'element\'  that is 3. If you cant find a value for \'element\', please set is as unknown. If the user is refering to more than one position, set \'element\' as all.\nWhat would be the key-value pair for this phrase:\n\'{input}\'\nPlease return the result inseide curly brackets."
+
+
 # Set the transformer verbosity to hide the annoying warnings
 transformers.logging.set_verbosity_error()
 
@@ -44,8 +47,6 @@ def add_special_tokens_to_model_and_tokenizer(model, tokenizer, special_tokens, 
             for special_token in special_tokens:
                 tokenizer.add_tokens(special_token)
         return
-
-#print("Loaded early iFetch slot filling and intent detector...")
     
 add_special_tokens_to_model_and_tokenizer(
     None,
@@ -54,7 +55,7 @@ add_special_tokens_to_model_and_tokenizer(
     ['I don\'t care', '[SEP]', '[SEP]', '[CLS]']
 )
 
-def interpreter(msg="find me a black suit please"):
+def interpreter(msg):
     o = input_function(tokenizer=tokenizer, question=msg)
     tokens = tokenizer.convert_ids_to_tokens(o["input_ids"][0])
     output = model.get_human_readable_output(o, tokens)
@@ -67,6 +68,3 @@ def interpreter(msg="find me a black suit please"):
         values.append(value)
 
     return intent, keys, values
-
-def get_qa_answer():
-    return ""

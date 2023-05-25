@@ -3,8 +3,8 @@ import transformers
 import torch
 import torch.nn.functional as F
 
-print(f"Transformers version {transformers.__version__}")
-print(f" PyTorch version {torch.__version__}")
+#print(f"Transformers version {transformers.__version__}")
+#print(f" PyTorch version {torch.__version__}")
 
 
 class Encoder:

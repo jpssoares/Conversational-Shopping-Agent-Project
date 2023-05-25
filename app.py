@@ -2,12 +2,11 @@ from flask import Flask, request
 from flask_cors import CORS
 import json
 import source.controller as ctrl
-import source.dialog as dialog
-import openai
-import os
+import source.conversation.dialog as dialog
+import source.conversation.gpt as gpt
+import source.conversation.product_qa as product_qa
 
 # Program variables
-openai.api_key = ""
 beginning_msg = "Hello! Welcome to Farfetch! What item are you looking for?"
 goodbye_msg = "Goodbye! If you need anything, I'll be here..."
 retry_msg = (
@@ -31,21 +30,6 @@ last_results = None
 app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
-
-def run_with_gpt_setup():
-    selected = input("Would you like to run using GPT-3? yes/[no] ")
-    if selected.upper() == "YES":
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-
-def get_gpt_answer(msg="What is Farfetch?"):
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", # this is "ChatGPT" $0.002 per 1k tokens
-        messages=[{"role": "user", "content": msg}]
-    )
-
-    reply_content = completion.choices[0].message.content
-    return reply_content
-
 
 def interprete_msg(data):
     global fst_message
@@ -109,7 +93,7 @@ def interprete_msg(data):
         }
     
     elif intent in dialog.chat_intent_keys:
-       gpt_answer = get_gpt_answer(input_msg)
+       gpt_answer = gpt.get_gpt_answer(input_msg)
        responseDict = {
             "has_response": True,
             "recommendations": "",
@@ -118,10 +102,11 @@ def interprete_msg(data):
         }
     
     elif intent in dialog.qa_intent_keys:
+       answer = product_qa.get_qa_answer(intent, last_results, input_msg)
        responseDict = {
             "has_response": True,
             "recommendations": "",
-            "response": dialog.get_qa_answer(),
+            "response": answer,
             "system_action": "",
         }
 
@@ -148,5 +133,4 @@ def dialog_turn():
         jsonString = interprete_msg(data)
     return jsonString
 
-run_with_gpt_setup()
 app.run(port=4000)
