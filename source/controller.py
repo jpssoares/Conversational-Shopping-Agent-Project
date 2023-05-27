@@ -27,7 +27,7 @@ search_types = [
     "text_and_attrs",
     "text_embeddings",
     "image_embeddings",
-    "cross_modal_embeddings"
+    "cross_modal_embeddings",
 ]
 
 product_fields = [
@@ -49,10 +49,10 @@ product_fields = [
 ]
 
 error_search = {
-        "has_response": True,
-        "recommendations": None,
-        "response": "Sorry, I couldn't find any products that meet your query...",
-        "system_action": "",
+    "has_response": True,
+    "recommendations": None,
+    "response": "Sorry, I couldn't find any products that meet your query...",
+    "system_action": "",
 }
 
 client = OpenSearch(
@@ -68,7 +68,21 @@ client = OpenSearch(
 
 encoder = Encoder()
 nlp = spacy.load("en_core_web_sm")
-negation_words = set(["no", "without", "not", "none", "neither", "nor", "never", "nobody", "nothing", "nowhere"])
+negation_words = set(
+    [
+        "no",
+        "without",
+        "not",
+        "none",
+        "neither",
+        "nor",
+        "never",
+        "nobody",
+        "nothing",
+        "nowhere",
+    ]
+)
+
 
 def get_recommendations(results):
     recommendations = []
@@ -116,35 +130,29 @@ def get_client_search(query_denc):
     return responseDict, recommendations
 
 
-def search_products_with_text_and_attributes(
-    qtxt_array, size_of_query=3
-):
+def search_products_with_text_and_attributes(qtxt_array, size_of_query=3):
     # verify that array has even len
-    if len(qtxt_array)%2!=0:
+    if len(qtxt_array) % 2 != 0:
         return error_search
-    
+
     result_query = ""
-    
+
     for idx, value in enumerate(qtxt_array):
-        if idx%2!=0:
+        if idx % 2 != 0:
             continue
-        qtxt = qtxt_array[idx+1]
+        qtxt = qtxt_array[idx + 1]
 
         if result_query != "":
             result_query = result_query + " AND "
-        
-        result_query = result_query + value + ":" + qtxt_array[idx+1]
+
+        result_query = result_query + value + ":" + qtxt_array[idx + 1]
 
     query_denc = {
         "size": size_of_query,
         "_source": product_fields,
-        "query": {
-            "query_string": {
-                "query": result_query
-            }
-        }
+        "query": {"query_string": {"query": result_query}},
     }
-    
+
     return get_client_search(query_denc)
 
 
@@ -314,7 +322,7 @@ def text_embeddings_search(search_query, size_of_query=3):
         for recommendation in desired_items.get("recommendations", list())
         if recommendation.get("id", -1) not in undesired_items_ids
     ][:size_of_query]
-    #print(desired_items)
+    # print(desired_items)
 
     return desired_items, desired_items["recommendations"]
 
@@ -330,19 +338,15 @@ def image_embeddings_search(input_image_query):
     emb_img = encoder.process_image(img)
 
     query_denc = {
-        'size': 3,
-        '_source': product_fields,
+        "size": 3,
+        "_source": product_fields,
         "query": {
-            "knn": {
-                "image_embedding": {
-                    "vector": emb_img[0].detach().numpy(),
-                    "k": 2
-                }
-            }
-        }
+            "knn": {"image_embedding": {"vector": emb_img[0].detach().numpy(), "k": 2}}
+        },
     }
 
     return get_client_search(query_denc)
+
 
 def cross_modal_search(input_text_query, input_image_query):
     try:
@@ -393,16 +397,13 @@ def cross_modal_search(input_text_query, input_image_query):
         },
     }
     undesired_query_denc = {
-        'size': 20,
-        '_source': product_fields,
+        "size": 20,
+        "_source": product_fields,
         "query": {
             "knn": {
-                "combined_embedding": {
-                    "vector": cross_modal_embs_undesired,
-                    "k": 2
-                }
+                "combined_embedding": {"vector": cross_modal_embs_undesired, "k": 2}
             }
-        }
+        },
     }
 
     desired_items = get_client_search(desired_query_denc)
@@ -416,27 +417,39 @@ def cross_modal_search(input_text_query, input_image_query):
         recommendation
         for recommendation in desired_items.get("recommendations", list())
         if recommendation.get("id", -1) not in undesired_items_ids
-        ][:3]
+    ][:3]
     print(desired_items)
 
     return desired_items, desired_items["recommendations"]
 
 
+def create_query_from_key_value_pais(keys, values):
+    result_query = ""
+    idx = 0
+    while idx < len(keys):
+        result_query = result_query + keys[idx] + " " + values[idx]
+        idx = idx + 1
+        if idx < len(keys):
+            result_query = result_query + " "
+
+    return result_query
+
 def create_response_for_query(input_text_query, input_image_query, keys, values):
     input_query_parts = input_text_query.split(" ")
+    # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
+    query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
+    
     if search_used == "full_text":
-        return search_products_full_text(input_text_query)
+        return search_products_full_text(query_from_key_value_pairs)
     elif search_used == "boolean_search":
-        return search_products_boolean(input_text_query)
+        return search_products_boolean(query_from_key_value_pairs)
     elif search_used == "text_and_attrs":
-        return search_products_with_text_and_attributes(
-            input_query_parts
-        )
+        return search_products_with_text_and_attributes(input_query_parts)
     else:
         if input_image_query == "" or input_image_query is None:
-            return text_embeddings_search(input_text_query)
+            return text_embeddings_search(query_from_key_value_pairs)
         else:
             if input_text_query == "":
                 return image_embeddings_search(input_image_query)
             else:
-                return cross_modal_search(input_text_query, input_image_query)
+                return cross_modal_search(query_from_key_value_pairs, input_image_query)

@@ -60,11 +60,14 @@ def interpreter(msg):
     tokens = tokenizer.convert_ids_to_tokens(o["input_ids"][0])
     output = model.get_human_readable_output(o, tokens)
     intent = output.get_intent()
-    keys = output.value.keys()
+    dict_keys = output.value.keys()
+
+    keys = []
     values = []
 
-    for key in keys:
+    for key in dict_keys:
         value = output.get_slot_value_from_key(key)
+        keys.append(key)
         values.append(value)
 
     return intent, keys, values

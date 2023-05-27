@@ -61,7 +61,6 @@ def interprete_msg(data):
             }
 
     intent, keys, values = dialog.interpreter(input_msg)
-    print(intent)
 
     if intent == "user_request_get_products" or (input_msg=="" and input_img!=None):
         responseDict, last_results = ctrl.create_response_for_query(input_msg, input_img, keys, values)

@@ -1,7 +1,7 @@
 import json
 import source.conversation.gpt as gpt
 
-get_elem_prompt = "I am building a dialog state tracking machine, and my model has a slot_key named \'element\'. \'element\' represent the position of the element in a given sequence. For example, \'what is the brand of the third product?\' will give me a value for \'element\'  that is 3. If you cant find a value for \'element\', please set is as \"unknown\". If the user is refering to more than one position, set \'element\' as \"all\".\nWhat would be the key-value pair for this phrase:\n\'{input}\'\nPlease return the result inseide curly brackets."
+get_elem_prompt = "I am building a dialog state tracking machine, and my model has a slot_key named \'element\'. \'element\' represent the position of the element in a given sequence. For example, \'what is the brand of the third product?\' will give me a value for \'element\'  that is 3. If you cant find a value for \'element\', please set it as \"unknown\". If the user is referring to more than one position, set \'element\' as \"all\".\nWhat would be the key-value pair for this phrase:\n\'{input}\'\nPlease return the result inside curly brackets."
 
 # Aux function. Only use if the language of choice is ENG
 def word_for_position(pos):
