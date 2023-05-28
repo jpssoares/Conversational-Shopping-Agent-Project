@@ -48,13 +48,6 @@ product_fields = [
     "outfits_products",
 ]
 
-error_search = {
-    "has_response": True,
-    "recommendations": None,
-    "response": "Sorry, I couldn't find any products that meet your query...",
-    "system_action": "",
-}
-
 client = OpenSearch(
     hosts=[{"host": host, "port": port}],
     http_compress=True,
@@ -118,24 +111,16 @@ def get_client_search(query_denc):
     print(results)
     recommendations = get_recommendations(results)
     if len(recommendations) == 0 or query_denc is None:
-        return error_search
+        return None
     else:
-        responseDict = {
-            "has_response": True,
-            "recommendations": recommendations,
-            "response": "Here are some items I found...",
-            "system_action": "",
-        }
-
-    return responseDict, recommendations
-
+        return recommendations
 
 def search_products_with_text_and_attributes(qtxt, size_of_query=3):
     qtxt_array = qtxt.split(" ")
 
     # verify that array has even len
     if len(qtxt_array) % 2 != 0:
-        return error_search
+        return None
 
     result_query = ""
 
