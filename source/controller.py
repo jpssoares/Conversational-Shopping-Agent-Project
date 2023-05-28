@@ -130,7 +130,9 @@ def get_client_search(query_denc):
     return responseDict, recommendations
 
 
-def search_products_with_text_and_attributes(qtxt_array, size_of_query=3):
+def search_products_with_text_and_attributes(qtxt, size_of_query=3):
+    qtxt_array = qtxt.split(" ")
+
     # verify that array has even len
     if len(qtxt_array) % 2 != 0:
         return error_search
@@ -435,7 +437,6 @@ def create_query_from_key_value_pais(keys, values):
     return result_query
 
 def create_response_for_query(input_text_query, input_image_query, keys, values):
-    input_query_parts = input_text_query.split(" ")
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
     query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
     
@@ -444,7 +445,7 @@ def create_response_for_query(input_text_query, input_image_query, keys, values)
     elif search_used == "boolean_search":
         return search_products_boolean(query_from_key_value_pairs)
     elif search_used == "text_and_attrs":
-        return search_products_with_text_and_attributes(input_query_parts)
+        return search_products_with_text_and_attributes(input_text_query)
     else:
         if input_image_query == "" or input_image_query is None:
             return text_embeddings_search(query_from_key_value_pairs)
