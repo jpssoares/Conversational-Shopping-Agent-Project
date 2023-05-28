@@ -297,21 +297,13 @@ def text_embeddings_search(search_query, size_of_query=3):
         },
     }
 
-    desired_items, _ = get_client_search(desired_query_denc)
-    undesired_items_ids = [
-        recommendation.get("id", -1)
-        for recommendation in get_client_search(undesired_query_denc)[0].get(
-            "recommendations", list()
-        )
-    ]
-    desired_items["recommendations"] = [
-        recommendation
-        for recommendation in desired_items.get("recommendations", list())
-        if recommendation.get("id", -1) not in undesired_items_ids
-    ][:size_of_query]
-    # print(desired_items)
+    desired_items = get_client_search(desired_query_denc)
+    undesired_items = get_client_search(undesired_query_denc)
+    for i in undesired_items:
+        if i in desired_items:
+            desired_items.remove(i)
 
-    return desired_items, desired_items["recommendations"]
+    return desired_items
 
 
 def decode_img(input_image_query):

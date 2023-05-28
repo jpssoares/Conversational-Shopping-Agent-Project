@@ -1,7 +1,7 @@
+# from langdetect import detect
+# from translate import Translator
 from flask import Flask, request
 from flask_cors import CORS
-from langdetect import detect
-from translate import Translator
 import json
 import source.controller as ctrl
 import source.conversation.dialog as dialog
@@ -36,18 +36,16 @@ app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
 
-
-def get_output_current_lang(msg):
+def translate_to_lang(msg, lang=current_lang):
     global current_lang
     if current_lang == 'en':
         return msg
-    translator = Translator(to_lang=current_lang)
-    translation = translator.translate(msg)
-    return translation
+    
+    # FIXME: implement translate logic here
+    return msg
 
 
 def interprete_msg(data):
-    print("tets")
     global current_lang
     global fst_message
     global last_results
@@ -57,7 +55,9 @@ def interprete_msg(data):
     jsonString = ""
 
     # check if user is still responding in the same language
-    current_lang = detect(input_msg)
+    # FIXME: implement language detection here
+    # if not fst_message:
+    #     current_lang = detect(input_msg)
 
     # in order to maintain the functionality from the first part,
     # we leave the change_search_type as is
@@ -68,18 +68,19 @@ def interprete_msg(data):
             responseDict = {
                 "has_response": True,
                 "recommendations": "",
-                "response": get_output_current_lang(search_type_changed_msg),
+                "response": translate_to_lang(search_type_changed_msg),
                 "system_action": "",
             }
         else:
             responseDict = {
                 "has_response": True,
                 "recommendations": "",
-                "response": get_output_current_lang(search_type_change_error),
+                "response": translate_to_lang(search_type_change_error),
                 "system_action": "",
             }
 
-    intent, keys, values = dialog.interpreter(input_msg)
+    translated_input = translate_to_lang(input_msg, "en")
+    intent, keys, values = dialog.interpreter(translated_input)
 
     if intent == "user_request_get_products" or (input_msg == "" and input_img != None):
         last_results = ctrl.create_response_for_query(
@@ -89,14 +90,14 @@ def interprete_msg(data):
             responseDict = {
                 "has_response": True,
                 "recommendations": None,
-                "response": get_output_current_lang(bad_search_msg),
+                "response": translate_to_lang(bad_search_msg),
                 "system_action": "",
             }
         else:
             responseDict = {
                 "has_response": True,
                 "recommendations": last_results,
-                "response": get_output_current_lang(success_search_msg),
+                "response": translate_to_lang(success_search_msg),
                 "system_action": "",
             }
 
@@ -105,7 +106,7 @@ def interprete_msg(data):
         responseDict = {
             "has_response": True,
             "recommendations": "",
-            "response": get_output_current_lang(beginning_msg),
+            "response": translate_to_lang(beginning_msg),
             "system_action": "",
         }
 
@@ -122,7 +123,7 @@ def interprete_msg(data):
         responseDict = {
             "has_response": True,
             "recommendations": "",
-            "response": get_output_current_lang(goodbye_msg),
+            "response": translate_to_lang(goodbye_msg),
             "system_action": "",
         }
 
@@ -150,7 +151,7 @@ def interprete_msg(data):
         responseDict = {
             "has_response": True,
             "recommendations": "",
-            "response": get_output_current_lang(error_msg),
+            "response": translate_to_lang(error_msg),
             "system_action": "",
         }
 
