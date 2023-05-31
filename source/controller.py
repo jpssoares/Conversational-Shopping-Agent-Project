@@ -9,6 +9,7 @@ from source.Encoder import Encoder
 from itertools import chain
 from PIL import Image
 import spacy
+from typing import ByteString
 
 load_dotenv()
 
@@ -19,7 +20,7 @@ index_name = "farfetch_images"
 user = os.getenv("API_USER")
 password = os.getenv("API_PASSWORD")
 
-search_used = "text_embeddings"
+search_type = "text_embeddings"
 
 search_types = [
     "full_text",
@@ -307,7 +308,7 @@ def text_embeddings_search(search_query, size_of_query=3):
     return desired_items
 
 
-def decode_img(input_image_query):
+def decode_img(input_image_query: ByteString):
     q_image = base64.b64decode(input_image_query.split(",")[1])
     image = Image.open(io.BytesIO(q_image))
     return image
@@ -414,19 +415,24 @@ def create_query_from_key_value_pais(keys, values):
     return result_query
 
 
-def create_response_for_query(input_text_query, input_image_query, keys, values):
-    global search_used
+def create_response_for_query(
+    input_text_query: str,
+    input_image_query: ByteString,
+    keys,
+    values,
+    *,
+    search_type="text_search",
+):
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
     query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
 
-    if search_used == "vqa_search":
-        search_used = "text_embeddings"  # restore search type to default
+    if search_type == "vqa_search":
         return text_embeddings_search(input_text_query)
-    elif search_used == "full_text":
+    elif search_type == "full_text":
         return search_products_full_text(query_from_key_value_pairs)
-    elif search_used == "boolean_search":
+    elif search_type == "boolean_search":
         return search_products_boolean(query_from_key_value_pairs)
-    elif search_used == "text_and_attrs":
+    elif search_type == "text_and_attrs":
         return search_products_with_text_and_attributes(input_text_query)
     else:
         if input_image_query == "" or input_image_query is None:
