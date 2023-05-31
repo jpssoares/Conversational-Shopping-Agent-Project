@@ -107,8 +107,8 @@ def get_client_search(query_denc):
     response = client.search(body=query_denc, index=index_name)
     results = [r["_source"] for r in response["hits"]["hits"]]
 
-    print("\nSearch results:")
-    print(results)
+    # print("\nSearch results:")
+    # print(results)
     recommendations = get_recommendations(results)
     if len(recommendations) == 0 or query_denc is None:
         return None
@@ -357,7 +357,7 @@ def cross_modal_search(input_text_query, input_image_query):
         desired_query = input_text_query
         undesired_query = ""
 
-    print(f"Desired query: '{desired_query}'", f"without '{undesired_query}'", sep="\n")
+    #print(f"Desired query: '{desired_query}'", f"without '{undesired_query}'", sep="\n")
     image = decode_img(input_image_query)
 
     cross_modal_embs_desired = encoder.encode_cross_modal(desired_query, image)
@@ -410,14 +410,17 @@ def create_query_from_key_value_pais(keys, values):
         idx = idx + 1
         if idx < len(keys):
             result_query = result_query + " "
-
     return result_query
 
 def create_response_for_query(input_text_query, input_image_query, keys, values):
+    global search_used
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
     query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
     
-    if search_used == "full_text":
+    if search_used == "vqa_search":
+        search_used = "text_embeddings" # restore search type to default
+        return text_embeddings_search(input_text_query)
+    elif search_used == "full_text":
         return search_products_full_text(query_from_key_value_pairs)
     elif search_used == "boolean_search":
         return search_products_boolean(query_from_key_value_pairs)

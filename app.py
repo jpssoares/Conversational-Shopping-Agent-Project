@@ -3,10 +3,12 @@
 from flask import Flask, request
 from flask_cors import CORS
 import json
+import validators
 import source.controller as ctrl
 import source.conversation.dialog as dialog
 import source.conversation.gpt as gpt
 import source.conversation.product_qa as product_qa
+import source.conversation.image_captioning as img_cap
 
 # Program variables
 beginning_msg = "Hello! Welcome to Farfetch! What item are you looking for?"
@@ -78,11 +80,30 @@ def interprete_msg(data):
                 "response": translate_to_lang(search_type_change_error),
                 "system_action": "",
             }
+    
 
     translated_input = translate_to_lang(input_msg, "en")
     intent, keys, values = dialog.interpreter(translated_input)
+    print(intent)
+    # print(keys)
+    # print(values)
+    
+    clothes = []
+    if validators.url(input_msg_parts[0]):
+        # get image caption
+        caption = img_cap.get_caption_for_image(input_msg_parts[0])
+        print("caption: " + caption)
+        # get clothes array using GPT
+        if caption != None:
+            clothes = img_cap.get_clothing_items_from_caption(caption)
 
     if intent == "user_request_get_products" or (input_msg == "" and input_img != None):
+        if clothes != []:
+            match = img_cap.get_matching_clothes_quey(clothes, keys, values)
+            if match != None:
+                input_msg = match
+                ctrl.search_used = "vqa_search"
+
         last_results = ctrl.create_response_for_query(
             input_msg, input_img, keys, values
         )
