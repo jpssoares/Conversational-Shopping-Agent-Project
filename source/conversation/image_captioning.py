@@ -34,9 +34,10 @@ def array_put_elem_first(arr, elem):
     new_arr = [elem]
     idx = arr.index(elem)
     arr.remove(elem)
+
     return idx, new_arr + arr
 
-def get_matching_clothes_quey(clothes, keys, values):
+def get_matching_clothes_query(clothes, keys, values):
     try:
         # prioritize category
         idx, keys = array_put_elem_first(keys, "category")
@@ -44,6 +45,9 @@ def get_matching_clothes_quey(clothes, keys, values):
             _, values = array_put_elem_first(values, values[idx])
         
         # return first partial match in clothes array
+        print(keys)
+        print(values)
+        
         for value in values:
             for item in clothes:
                 if value in item:

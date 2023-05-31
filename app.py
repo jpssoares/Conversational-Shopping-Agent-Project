@@ -84,6 +84,9 @@ def interprete_msg(data):
 
     translated_input = translate_to_lang(input_msg, "en")
     intent, keys, values = dialog.interpreter(translated_input)
+    from copy import deepcopy
+    f_keys = deepcopy(keys)
+    f_values = deepcopy(values)
     print(intent)
     print(keys)
     print(values)
@@ -99,12 +102,13 @@ def interprete_msg(data):
 
     if intent == "user_request_get_products" or (input_msg == "" and input_img != None):
         if clothes != []:
-            match = img_cap.get_matching_clothes_quey(clothes, keys, values)
-            print(match)
+            match = img_cap.get_matching_clothes_query(clothes, keys, values)
+            keys = f_keys
+            values = f_values
             if match != None:
                 input_msg = match
                 ctrl.search_used = "vqa_search"
-
+        
         last_results = ctrl.create_response_for_query(
             input_msg, input_img, keys, values
         )
