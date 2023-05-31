@@ -36,7 +36,7 @@ cat requirements.txt | xargs -n 1 pip install
 Check lab0 for instructions:
 https://wiki.novasearch.org/wiki/lab_setup
 
-### Step 3 - Import the trained-models folder(for the dialog system)
+#### Step 3 - Import the trained-models folder(for the dialog system)
 Get the folder from here:
 https://drive.google.com/file/d/1VGHkzIzag0bXj4wdD5DD1CTjYU4Fs54D/view
 #### Step 4 - Run the program
