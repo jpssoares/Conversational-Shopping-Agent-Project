@@ -273,7 +273,7 @@ def text_embeddings_search(search_query, size_of_query=3):
     desired_query_emb = encoder.encode(desired_query)
     undesired_query_emb = encoder.encode(undesired_query)
     desired_query_denc = {
-        "size": 20 + size_of_query,
+        "size": size_of_query,
         "_source": product_fields,
         "query": {
             "knn": {
@@ -327,7 +327,7 @@ def image_embeddings_search(input_image_query):
     return get_client_search(query_denc)
 
 
-def cross_modal_search(input_text_query, input_image_query):
+def cross_modal_search(input_text_query, input_image_query, size_of_query = 3):
     try:
         try:
             negated_terms = next(
@@ -364,7 +364,7 @@ def cross_modal_search(input_text_query, input_image_query):
     cross_modal_embs_undesired = encoder.encode_cross_modal(undesired_query, image)
 
     desired_query_denc = {
-        "size": 20 + 3,
+        "size": size_of_query,
         "_source": product_fields,
         "query": {
             "knn": {
