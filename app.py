@@ -38,11 +38,12 @@ app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
 
+
 def translate_to_lang(msg, lang=current_lang):
     global current_lang
-    if current_lang == 'en':
+    if current_lang == "en":
         return msg
-    
+
     # FIXME: implement translate logic here
     return msg
 
@@ -80,14 +81,13 @@ def interprete_msg(data):
                 "response": translate_to_lang(search_type_change_error),
                 "system_action": "",
             }
-    
 
     translated_input = translate_to_lang(input_msg, "en")
     intent, keys, values = dialog.interpreter(translated_input)
     print(intent)
     print(keys)
     print(values)
-    
+
     clothes = []
     if validators.url(input_msg_parts[0]):
         # get image caption

@@ -3,8 +3,8 @@ import transformers
 import torch
 import torch.nn.functional as F
 
-#print(f"Transformers version {transformers.__version__}")
-#print(f" PyTorch version {torch.__version__}")
+# print(f"Transformers version {transformers.__version__}")
+# print(f" PyTorch version {torch.__version__}")
 
 
 class Encoder:
@@ -15,7 +15,9 @@ class Encoder:
         self.tokenizer = transformers.CLIPTokenizer.from_pretrained(
             "openai/clip-vit-base-patch32"
         )
-        self.processor = transformers.CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        self.processor = transformers.CLIPProcessor.from_pretrained(
+            "openai/clip-vit-base-patch32"
+        )
 
     def mean_pooling(self, model_output, attention_mask):
         token_embeddings = model_output.last_hidden_state
@@ -45,7 +47,9 @@ class Encoder:
         text_emb = self.encode(text)[0].detach().numpy().tolist()
         img_emb = self.process_image(image)[0].detach().numpy().tolist()
 
-        combined_emb = F.normalize(torch.tensor(np.array(img_emb) + np.array(text_emb)), dim=0).to(torch.device('cpu')).numpy()
+        combined_emb = (
+            F.normalize(torch.tensor(np.array(img_emb) + np.array(text_emb)), dim=0)
+            .to(torch.device("cpu"))
+            .numpy()
+        )
         return combined_emb
-
-

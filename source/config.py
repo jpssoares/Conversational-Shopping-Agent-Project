@@ -13,4 +13,3 @@ def _get_as_dict(self):
         if not arg.startswith("_"):
             me_as_dict[arg] = getattr(self, arg)
     return me_as_dict
-

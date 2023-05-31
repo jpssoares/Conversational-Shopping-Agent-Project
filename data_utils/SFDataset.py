@@ -13,6 +13,7 @@ import source.config as config
 from collections.abc import MutableSequence
 from copy import deepcopy
 
+
 class SFDataset(Dataset):
     def __init__(
         self,
@@ -76,7 +77,6 @@ class SFDataset(Dataset):
             self.handle_slot_dropout(self.get_item(item), item_to_return["input_ids"])
         return item_to_return, item
 
-
     def _is_list_or_listlike(self, item):
         return isinstance(item, (MutableSequence, dict, np.ndarray, torch.Tensor))
 
@@ -91,15 +91,21 @@ class SFDataset(Dataset):
                 return ret
 
         if not self._is_positive_example(item):
-            item_to_return = self.all_negative_items_to_sample[item - len(self.all_items)]
+            item_to_return = self.all_negative_items_to_sample[
+                item - len(self.all_items)
+            ]
         else:
             item_to_return = self.extra_info[item]
         return item_to_return
 
-    def handle_slot_dropout(self, item: statetrackingutils.SlotFillingInputInfo, input_ids): # TODO this could be made more complicated to promote more input variations
+    def handle_slot_dropout(
+        self, item: statetrackingutils.SlotFillingInputInfo, input_ids
+    ):  # TODO this could be made more complicated to promote more input variations
         # could be interesting to have all slots mentioned in this utterance be potentially dropped out
         for single_item in item.slots.values():
             r = rand(single_item.span_end - single_item.span_start + 1)
-            for i, random_i in zip(range(single_item.span_start, single_item.span_end + 1), r):
+            for i, random_i in zip(
+                range(single_item.span_start, single_item.span_end + 1), r
+            ):
                 if random_i < self.dropout:
                     input_ids[i] = self.tokenizer.mask_token_id
