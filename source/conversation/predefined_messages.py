@@ -16,3 +16,12 @@ HELP_MSG = (
 
 MSG_SEARCH_TYPE_CHANGED = "The search type was successfully changed"
 MSG_SEARCH_TYPE_CHANGE_FAILED = "That search type doesn't exist...\nTry another one"
+
+
+def missing_characteristics_response(missing_characteristics: list) -> str:
+    return "".join(
+        [
+            f"What {characteristic} do You want? "
+            for characteristic in missing_characteristics
+        ]
+    )

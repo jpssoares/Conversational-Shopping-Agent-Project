@@ -3,7 +3,7 @@ from PIL import Image
 from transformers import BlipProcessor, BlipForConditionalGeneration
 import source.conversation.gpt as gpt
 from typing import Union, Any
-from controller import decode_img
+from ..controller import decode_img
 
 # processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
 # model = BlipForConditionalGeneration.from_pretrained(
