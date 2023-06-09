@@ -221,6 +221,9 @@ def search_products_boolean(qtxt: str, size_of_query=3):
 
 
 def negated_tokens(token):
+    """
+    Legacy code.
+    """
     descriptors = set(["pobj", "compound", "acomp", "amod", "attr"])
     if token.text == "without":
         root_child = next(token.children)
@@ -242,70 +245,21 @@ def negated_tokens(token):
 
 
 def text_embeddings_search(search_query, size_of_query=3):
-    try:
-        try:
-            negated_terms = next(
-                (
-                    chain(
-                        [
-                            negated_tokens(tok)
-                            for tok in nlp(search_query)
-                            if tok.dep_ == "neg" or tok.text in negation_words
-                        ]
-                    )
-                )
-            )
-        except StopIteration:
-            negated_terms = []
-        stop_words = [tok.text for tok in nlp(search_query) if tok.is_stop]
-        undesired_terms = set(negated_terms + stop_words)
-        desired_terms = set(search_query.split()) - undesired_terms - negation_words
-        desired_query = " ".join(desired_terms)
-        undesired_query = " ".join(undesired_terms)
-    except Exception as e:
-        print(
-            f"Unexpected error during negation processing: {e}",
-            "Defaulting to raw query.",
-            sep="\n",
-        )
-        desired_query = search_query
-        undesired_query = ""
-
-    print(f"Desired query: '{desired_query}'", f"without '{undesired_query}'", sep="\n")
-    desired_query_emb = encoder.encode(desired_query)
-    undesired_query_emb = encoder.encode(undesired_query)
-    desired_query_denc = {
+    search_query = encoder.encode(search_query)
+    search_query_denc = {
         "size": size_of_query,
         "_source": product_fields,
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": desired_query_emb[0].detach().numpy(),
-                    "k": 2,
-                }
-            }
-        },
-    }
-    undesired_query_denc = {
-        "size": 20,
-        "_source": product_fields,
-        "query": {
-            "knn": {
-                "combined_embedding": {
-                    "vector": undesired_query_emb[0].detach().numpy(),
+                    "vector": search_query[0].detach().numpy(),
                     "k": 2,
                 }
             }
         },
     }
 
-    desired_items = get_client_search(desired_query_denc)
-    undesired_items = get_client_search(undesired_query_denc)
-    for i in undesired_items:
-        if i in desired_items:
-            desired_items.remove(i)
-
-    return desired_items
+    return get_client_search(search_query_denc)
 
 
 def decode_img(input_image_query: ByteString):
@@ -330,78 +284,24 @@ def image_embeddings_search(input_image_query):
 
 
 def cross_modal_search(input_text_query, input_image_query, size_of_query=3):
-    try:
-        try:
-            negated_terms = next(
-                (
-                    chain(
-                        [
-                            negated_tokens(tok)
-                            for tok in nlp(input_text_query)
-                            if tok.dep_ == "neg" or tok.text in negation_words
-                        ]
-                    )
-                )
-            )
-        except StopIteration:
-            negated_terms = []
-        stop_words = [tok.text for tok in nlp(input_text_query) if tok.is_stop]
-        undesired_terms = set(negated_terms + stop_words)
-        desired_terms = set(input_text_query.split()) - undesired_terms - negation_words
-        desired_query = " ".join(desired_terms)
-        undesired_query = " ".join(undesired_terms)
-    except Exception as e:
-        print(
-            f"Unexpected error during negation processing: {e}",
-            "Defaulting to raw query.",
-            sep="\n",
-        )
-        desired_query = input_text_query
-        undesired_query = ""
-
-    # print(f"Desired query: '{desired_query}'", f"without '{undesired_query}'", sep="\n")
     image = decode_img(input_image_query)
 
-    cross_modal_embs_desired = encoder.encode_cross_modal(desired_query, image)
-    cross_modal_embs_undesired = encoder.encode_cross_modal(undesired_query, image)
+    query_emb = encoder.encode_cross_modal(input_text_query, image)
 
-    desired_query_denc = {
+    query_denc = {
         "size": size_of_query,
         "_source": product_fields,
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": cross_modal_embs_desired,
+                    "vector": query_emb,
                     "k": 2,
                 }
             }
         },
     }
-    undesired_query_denc = {
-        "size": 20,
-        "_source": product_fields,
-        "query": {
-            "knn": {
-                "combined_embedding": {"vector": cross_modal_embs_undesired, "k": 2}
-            }
-        },
-    }
 
-    desired_items = get_client_search(desired_query_denc)
-    undesired_items_ids = [
-        recommendation.get("id", -1)
-        for recommendation in get_client_search(undesired_query_denc).get(
-            "recommendations", list()
-        )
-    ]
-    desired_items["recommendations"] = [
-        recommendation
-        for recommendation in desired_items.get("recommendations", list())
-        if recommendation.get("id", -1) not in undesired_items_ids
-    ][:3]
-    print(desired_items)
-
-    return desired_items, desired_items["recommendations"]
+    return get_client_search(query_denc)
 
 
 def create_query_from_key_value_pais(keys, values):
@@ -420,7 +320,6 @@ def create_response_for_query(
     input_image_query: ByteString,
     keys,
     values,
-    *,
     search_type="text_search",
 ):
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
