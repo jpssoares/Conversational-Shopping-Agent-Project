@@ -54,8 +54,7 @@ def get_matching_clothes_quey(clothes, keys, values):
                 if value in item:
                     return item
     except:
-        pass
-    return None
+        return None
 
 
 def get_caption_for_image(input: Union[str, Any]):

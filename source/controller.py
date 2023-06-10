@@ -104,12 +104,10 @@ def create_new_recommendation(brand="None", desc="None", id="None", img_path="No
     return recommendation
 
 
-def get_client_search(query_denc):
+def get_client_search(query_denc: dict):
     response = client.search(body=query_denc, index=index_name)
     results = [r["_source"] for r in response["hits"]["hits"]]
 
-    # print("\nSearch results:")
-    # print(results)
     recommendations = get_recommendations(results)
     if len(recommendations) == 0 or query_denc is None:
         return None
@@ -220,7 +218,7 @@ def search_products_boolean(qtxt: str, size_of_query=3):
     return get_client_search(query_denc)
 
 
-def negated_tokens(token):
+def _negated_tokens(token):
     """
     Legacy code.
     """

@@ -28,17 +28,17 @@ def interprete_msg(data) -> str:
     global missing_characteristics
     input_msg: str = data.get("utterance")  # empty string if not present
     input_img = data.get("file")  # None if not present
-    intent, keys, values = dialog.interpreter(input_msg)
+    intent, slots, values = dialog.interpreter(input_msg)
 
-    if missing_characteristics and not keys:
+    if missing_characteristics and not slots:
         # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any".
         for characteristic in missing_characteristics:
             provided_characteristics[characteristic] = ""
 
     # we use all previously provided characteristics, but if user changed their mind newest value is used
-    for key, value in zip(keys, values):
-        provided_characteristics[key] = value
-    keys = list(provided_characteristics.keys())
+    for slot, value in zip(slots, values):
+        provided_characteristics[slot] = value
+    slots = list(provided_characteristics.keys())
     values = list(provided_characteristics.values())
 
     clothes = clothes_from_image(input_msg, input_img)
@@ -48,7 +48,7 @@ def interprete_msg(data) -> str:
         or missing_characteristics
     ):
         if clothes:
-            match = img_cap.get_matching_clothes_quey(clothes, keys, values)
+            match = img_cap.get_matching_clothes_quey(clothes, slots, values)
             if match is not None:
                 input_msg = match
                 search_type = "vqa_search"
@@ -72,7 +72,7 @@ def interprete_msg(data) -> str:
             missing_characteristics = list()
 
         last_results = ctrl.create_response_for_query(
-            input_msg, input_img, keys, values, search_type
+            input_msg, input_img, slots, values, search_type
         )
         if last_results is None:
             response = {
