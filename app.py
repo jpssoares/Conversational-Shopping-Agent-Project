@@ -169,7 +169,7 @@ def _update_search_type(input_msg) -> dict:
     input_msg_parts = input_msg.split(" ")
     response = None
     if input_msg_parts[0] == "change_search_type":
-        if input_msg_parts[1] in ctrl.search_types:
+        if input_msg_parts[1] in ctrl.SEARCH_TYPES:
             ctrl.search_type = input_msg_parts[1]
             response = {
                 "has_response": True,

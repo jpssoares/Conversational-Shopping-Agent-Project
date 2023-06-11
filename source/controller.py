@@ -6,10 +6,8 @@ import os
 import re
 from dotenv import load_dotenv
 from source.Encoder import Encoder
-from itertools import chain
 from PIL import Image
-import spacy
-from typing import ByteString
+from typing import ByteString, List
 
 load_dotenv()
 
@@ -20,9 +18,7 @@ index_name = "farfetch_images"
 user = os.getenv("API_USER")
 password = os.getenv("API_PASSWORD")
 
-search_type = "text_embeddings"
-
-search_types = [
+SEARCH_TYPES = [
     "full_text",
     "boolean_search",
     "text_and_attrs",
@@ -31,7 +27,7 @@ search_types = [
     "cross_modal_embeddings",
 ]
 
-product_fields = [
+PRODUCT_FIELDS = [
     "product_id",
     "product_family",
     "product_category",
@@ -61,21 +57,6 @@ client = OpenSearch(
 )
 
 encoder = Encoder()
-nlp = spacy.load("en_core_web_sm")
-negation_words = set(
-    [
-        "no",
-        "without",
-        "not",
-        "none",
-        "neither",
-        "nor",
-        "never",
-        "nobody",
-        "nothing",
-        "nowhere",
-    ]
-)
 
 
 def get_recommendations(results):
@@ -136,7 +117,7 @@ def search_products_with_text_and_attributes(qtxt, size_of_query=3):
 
     query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {"query_string": {"query": result_query}},
     }
 
@@ -149,7 +130,7 @@ def search_products_full_text(qtxt: str, size_of_query=3):
     qtxt = re.sub("\s*and\s+|\s+", "+", qtxt)
     query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {
             "simple_query_string": {
                 "query": qtxt,
@@ -211,7 +192,7 @@ def search_products_boolean(qtxt: str, size_of_query=3):
 
     query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {"bool": bool_dict},
     }
 
@@ -246,7 +227,7 @@ def text_embeddings_search(search_query, size_of_query=3):
     search_query = encoder.encode(search_query)
     search_query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {
             "knn": {
                 "combined_embedding": {
@@ -272,7 +253,7 @@ def image_embeddings_search(input_image_query):
 
     query_denc = {
         "size": 3,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {
             "knn": {"image_embedding": {"vector": emb_img[0].detach().numpy(), "k": 2}}
         },
@@ -288,7 +269,7 @@ def cross_modal_search(input_text_query, input_image_query, size_of_query=3):
 
     query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {
             "knn": {
                 "combined_embedding": {
@@ -302,7 +283,7 @@ def cross_modal_search(input_text_query, input_image_query, size_of_query=3):
     return get_client_search(query_denc)
 
 
-def create_query_from_key_value_pais(keys, values):
+def create_query_from_key_value_pais(keys: List[str], values: List[str]):
     result_query = ""
     idx = 0
     while idx < len(keys):
@@ -316,8 +297,8 @@ def create_query_from_key_value_pais(keys, values):
 def create_response_for_query(
     input_text_query: str,
     input_image_query: ByteString,
-    keys,
-    values,
+    keys: List[str],
+    values: List[str],
     search_type="text_search",
 ):
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
