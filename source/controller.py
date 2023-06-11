@@ -199,30 +199,6 @@ def search_products_boolean(qtxt: str, size_of_query=3):
     return get_client_search(query_denc)
 
 
-def _negated_tokens(token):
-    """
-    Legacy code.
-    """
-    descriptors = set(["pobj", "compound", "acomp", "amod", "attr"])
-    if token.text == "without":
-        root_child = next(token.children)
-        negated_tokens = [root_child.text] + [
-            child.text
-            for child in root_child.children
-            if child != token and child.dep_ in descriptors
-        ]
-        return negated_tokens
-    elif token.text == "no" or token.dep_ == "neg":
-        negated_tokens = [token.head.text] + [
-            child.text
-            for child in token.head.children
-            if child != token and child.dep_ in descriptors
-        ]
-        return negated_tokens
-    else:
-        return list()
-
-
 def text_embeddings_search(search_query, size_of_query=3):
     search_query = encoder.encode(search_query)
     search_query_denc = {

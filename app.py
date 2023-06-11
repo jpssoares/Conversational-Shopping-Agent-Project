@@ -162,32 +162,6 @@ def clothes_from_image(input_msg: str, input_img: ByteString):
     return clothes
 
 
-def _update_search_type(input_msg) -> dict:
-    """
-    Legacy code.
-    """
-    input_msg_parts = input_msg.split(" ")
-    response = None
-    if input_msg_parts[0] == "change_search_type":
-        if input_msg_parts[1] in ctrl.SEARCH_TYPES:
-            ctrl.search_type = input_msg_parts[1]
-            response = {
-                "has_response": True,
-                "recommendations": "",
-                "response": MSG_SEARCH_TYPE_CHANGED,
-                "system_action": "",
-            }
-        else:
-            response = {
-                "has_response": True,
-                "recommendations": "",
-                "response": MSG_SEARCH_TYPE_CHANGE_FAILED,
-                "system_action": "",
-            }
-
-    return response
-
-
 @app.route("/", methods=["POST"])
 def dialog_turn():
     if request.is_json:
