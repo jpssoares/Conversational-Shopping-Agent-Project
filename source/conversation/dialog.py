@@ -2,16 +2,10 @@ from models.model_utils import get_model
 from transformers import AutoTokenizer
 import source.config as config
 import transformers
-from predefined_messages import GET_ELEM_PROMPT
+from source.conversation.predefined_messages import GET_ELEM_PROMPT
 
 CHAT_INTENT_KEYS = [
     "user_neutral_are_you_a_bot",
-    "user_neutral_do_you_have_pets",
-    "user_neutral_fun_fact",
-    "user_neutral_how_old_are_you",
-    "user_neutral_meaning_of_life",
-    "user_neutral_tell_joke",
-    "user_neutral_what_are_your_hobbies",
     "user_neutral_what_is_your_name",
     "user_neutral_where_are_you_from",
     "user_neutral_who_do_you_work_for",
@@ -44,8 +38,7 @@ model, input_function, dataloading_function = get_model(
 def add_special_tokens_to_model_and_tokenizer(
     model, tokenizer, special_tokens, embeddings
 ):
-    # TODO instead of checking for the shared param you should really just have a good way to tell whether the model has some sort of decoder
-    if model is None or hasattr(model, "shared"):
+    if model is None or hasattr(model, "decoder"):
         if model is None:
             for special_token in special_tokens:
                 tokenizer.add_tokens(special_token)
@@ -61,18 +54,19 @@ add_special_tokens_to_model_and_tokenizer(
 
 
 def interpreter(msg: str):
+    global model
     o = input_function(tokenizer=tokenizer, question=msg)
     tokens = tokenizer.convert_ids_to_tokens(o["input_ids"][0])
-    output = model.get_human_readable_output(o, tokens)
+    output = model.to("cpu").get_human_readable_output(o, tokens)
     intent: str = output.get_intent()
     dict_keys = output.value.keys()
 
-    keys = []
+    slots = []
     values = []
 
     for key in dict_keys:
         value = output.get_slot_value_from_key(key)
-        keys.append(key)
+        slots.append(key)
         values.append(value)
 
-    return intent, keys, values
+    return intent, slots, values
