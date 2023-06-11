@@ -2,8 +2,9 @@ from models.model_utils import get_model
 from transformers import AutoTokenizer
 import source.config as config
 import transformers
+from predefined_messages import GET_ELEM_PROMPT
 
-chat_intent_keys = [
+CHAT_INTENT_KEYS = [
     "user_neutral_are_you_a_bot",
     "user_neutral_do_you_have_pets",
     "user_neutral_fun_fact",
@@ -17,7 +18,7 @@ chat_intent_keys = [
     "user_neutral_who_made_you",
 ]
 
-qa_intent_keys = [
+QA_INTENT_KEYS = [
     "user_qa_check_information",
     "user_qa_product_composition",
     "user_qa_product_description",
@@ -25,13 +26,10 @@ qa_intent_keys = [
     "user_qa_product_measurement",
 ]
 
-get_elem_prompt = "I am building a dialog state tracking machine, and my model has a slot_key named 'element'. 'element' represent the position of the element in a given sequence. For example, 'what is the brand of the third product?' will give me a value for 'element'  that is 3. If you cant find a value for 'element', please set is as unknown. If the user is refering to more than one position, set 'element' as all.\nWhat would be the key-value pair for this phrase:\n'{input}'\nPlease return the result inseide curly brackets."
-
 
 # Set the transformer verbosity to hide the annoying warnings
 transformers.logging.set_verbosity_error()
 
-# load model and tokenizer
 checkpoint_name = "bert-base-uncased"
 config.model_name = "bertdsti"
 config.start_by_loading = True
@@ -62,11 +60,11 @@ add_special_tokens_to_model_and_tokenizer(
 )
 
 
-def interpreter(msg):
+def interpreter(msg: str):
     o = input_function(tokenizer=tokenizer, question=msg)
     tokens = tokenizer.convert_ids_to_tokens(o["input_ids"][0])
     output = model.get_human_readable_output(o, tokens)
-    intent = output.get_intent()
+    intent: str = output.get_intent()
     dict_keys = output.value.keys()
 
     keys = []

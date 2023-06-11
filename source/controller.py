@@ -59,7 +59,7 @@ client = OpenSearch(
 encoder = Encoder()
 
 
-def get_recommendations(results):
+def get_recommendations(results: List[dict]):
     recommendations = []
 
     for r in results:
@@ -96,7 +96,7 @@ def get_client_search(query_denc: dict):
         return recommendations
 
 
-def search_products_with_text_and_attributes(qtxt, size_of_query=3):
+def search_products_with_text_and_attributes(qtxt: str, size_of_query=3):
     qtxt_array = qtxt.split(" ")
 
     # verify that array has even len
@@ -199,15 +199,15 @@ def search_products_boolean(qtxt: str, size_of_query=3):
     return get_client_search(query_denc)
 
 
-def text_embeddings_search(search_query, size_of_query=3):
-    search_query = encoder.encode(search_query)
+def text_embeddings_search(search_query: str, size_of_query=3):
+    search_query_emb = encoder.encode(search_query)
     search_query_denc = {
         "size": size_of_query,
         "_source": PRODUCT_FIELDS,
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": search_query[0].detach().numpy(),
+                    "vector": search_query_emb[0].detach().numpy(),
                     "k": 2,
                 }
             }
@@ -223,7 +223,7 @@ def decode_img(input_image_query: ByteString):
     return image
 
 
-def image_embeddings_search(input_image_query):
+def image_embeddings_search(input_image_query: ByteString):
     img = decode_img(input_image_query)
     emb_img = encoder.process_image(img)
 
@@ -238,7 +238,9 @@ def image_embeddings_search(input_image_query):
     return get_client_search(query_denc)
 
 
-def cross_modal_search(input_text_query, input_image_query, size_of_query=3):
+def cross_modal_search(
+    input_text_query: str, input_image_query: ByteString, size_of_query=3
+):
     image = decode_img(input_image_query)
 
     query_emb = encoder.encode_cross_modal(input_text_query, image)

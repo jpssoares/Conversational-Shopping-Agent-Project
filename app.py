@@ -21,7 +21,7 @@ app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
 
 
-def interprete_msg(data) -> str:
+def interprete_msg(data: dict) -> str:
     global fst_message
     global last_results
     global provided_characteristics
@@ -114,7 +114,7 @@ def interprete_msg(data) -> str:
             "system_action": "",
         }
 
-    elif intent in dialog.chat_intent_keys:
+    elif intent in dialog.CHAT_INTENT_KEYS:
         gpt_answer = gpt.get_gpt_answer(input_msg)
         response = {
             "has_response": True,
@@ -123,7 +123,7 @@ def interprete_msg(data) -> str:
             "system_action": "",
         }
 
-    elif intent in dialog.qa_intent_keys:
+    elif intent in dialog.QA_INTENT_KEYS:
         answer = product_qa.get_qa_answer(intent, last_results, input_msg)
         response = {
             "has_response": True,

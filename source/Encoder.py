@@ -43,7 +43,7 @@ class Encoder:
         embeddings_image = F.normalize(self.model.get_image_features(**processed_image))
         return embeddings_image
 
-    def encode_cross_modal(self, text, image):
+    def encode_cross_modal(self, text: str, image):
         text_emb = self.encode(text)[0].detach().numpy().tolist()
         img_emb = self.process_image(image)[0].detach().numpy().tolist()
 
