@@ -40,6 +40,8 @@ def interprete_msg(data: dict) -> str:
     # we use all previously provided characteristics, but if user changed their mind newest value is used
     for slot, value in zip(slots, values):
         provided_characteristics[slot] = value
+
+    print(f"provided_characteristics: {provided_characteristics}")
     slots = list(provided_characteristics.keys())
     values = list(provided_characteristics.values())
 
@@ -54,8 +56,11 @@ def interprete_msg(data: dict) -> str:
             if match is not None:
                 input_msg = match
                 search_type = "vqa_search"
+            else:
+                search_type = "text_search"
         else:
             search_type = "text_search"
+
         missing_characteristics = [
             characteristic
             for characteristic in NECESSARY_CHARACTERISTICS
