@@ -1,28 +1,29 @@
 from flask import Flask, request
 from flask_cors import CORS
 import json
+import os
 import validators
 import source.controller as ctrl
 import source.conversation.dialog as dialog
+import source.conversation.gpt as gpt
 import source.conversation.product_qa as product_qa
 import source.conversation.image_captioning as img_cap
-from source.conversation.ordinals import get_position
 from source.conversation.predefined_messages import *
 from typing import ByteString
-
 
 fst_message = True
 last_results = None
 provided_characteristics = dict()
-NECESSARY_CHARACTERISTICS = ["category", "colour"]
+NECESSARY_CHARACTERISTICS = ["category"]
 missing_characteristics = list()
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
 
 
-def interpret_msg(data: dict) -> str:
+def interprete_msg(data: dict) -> str:
     global fst_message
     global last_results
     global provided_characteristics
@@ -30,60 +31,38 @@ def interpret_msg(data: dict) -> str:
     input_msg: str = data.get("utterance")  # empty string if not present
     input_img = data.get("file")  # None if not present
     intent, slots, values = dialog.interpreter(input_msg)
-    slots, values = _update_provided_characteristics(slots, values)
-    ordinal = get_position(input_msg)
 
-    print(
-        f"Message '{input_msg}', intent '{intent}', provided characteristics '{provided_characteristics}'"
-    )
+    if missing_characteristics and not slots:
+        # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any".
+        for characteristic in missing_characteristics:
+            provided_characteristics[characteristic] = ""
 
+    # we use all previously provided characteristics, but if user changed their mind newest value is used
+    for slot, value in zip(slots, values):
+        provided_characteristics[slot] = value
+    slots = list(provided_characteristics.keys())
+    values = list(provided_characteristics.values())
+
+    clothes = clothes_from_image(input_msg, input_img)
     if (
-        _asking_about_more_similar_products(ordinal, last_results)
-        and intent not in dialog.QA_INTENT_KEYS
+        intent == "user_request_get_products"
+        or (input_msg == "" and input_img is not None)
+        or missing_characteristics
     ):
-        print(f"Returning more products like {last_results[ordinal]}")
-        last_results = ctrl.get_similar(last_results[ordinal])
-        response = {
-            "has_response": True,
-            "recommendations": last_results,
-            "response": SUCCESS_SEARCH_MSG,
-            "system_action": "",
-        }
-        return json.dumps(response)
-
-    if intent == "user_request_get_products":
-        links_to_images = [part for part in input_msg.split() if validators.url(part)]
-        if (input_msg == "" and input_img is not None) or links_to_images:
-            print("Looking for clothes for VQA")
-            clothes = clothes_from_image(links_to_images, input_img)
-            if clothes:
-                print("Found clothes on the image")
-                match = img_cap.get_matching_clothes_quey(clothes, slots, values)
-                if match is not None:
-                    print("Found a match, creating response based on VQA")
-                    last_results = ctrl.create_response_for_query(
-                        match, input_img, slots, values, search_type="vqa_search"
-                    )
-                    if last_results is None:
-                        response = {
-                            "has_response": True,
-                            "recommendations": last_results,
-                            "response": SUCCESS_SEARCH_MSG,
-                            "system_action": "",
-                        }
-                    else:
-                        response = {
-                            "has_response": True,
-                            "recommendations": None,
-                            "response": BAD_SEARCH_MSG,
-                            "system_action": "",
-                        }
-                    return json.dumps(response)
-
-        _update_missing_characteristics()
+        if clothes:
+            match = img_cap.get_matching_clothes_quey(clothes, slots, values)
+            if match is not None:
+                input_msg = match
+                search_type = "vqa_search"
+        else:
+            search_type = "text_search"
+        missing_characteristics = [
+            characteristic
+            for characteristic in NECESSARY_CHARACTERISTICS
+            if characteristic not in provided_characteristics.keys()
+        ]
         if missing_characteristics:
-            print(f"Asking for additional information about: {missing_characteristics}")
-            response = {
+            response = response = {
                 "has_response": True,
                 "recommendations": None,
                 "response": missing_characteristics_response(missing_characteristics),
@@ -94,9 +73,8 @@ def interpret_msg(data: dict) -> str:
             provided_characteristics = dict()
             missing_characteristics = list()
 
-        print("Creating a response based just on embeddings")
         last_results = ctrl.create_response_for_query(
-            input_msg, input_img, slots, values
+            input_msg, input_img, slots, values, search_type
         )
         if last_results is None:
             response = {
@@ -121,6 +99,7 @@ def interpret_msg(data: dict) -> str:
             "response": BEGGINING_MSG,
             "system_action": "",
         }
+
     elif intent == "user_neutral_what_can_i_ask_you":
         response = {
             "has_response": True,
@@ -128,11 +107,40 @@ def interpret_msg(data: dict) -> str:
             "response": HELP_MSG,
             "system_action": "",
         }
+
     elif intent == "user_neutral_goodbye":
         response = {
             "has_response": True,
             "recommendations": "",
             "response": GOODBYE_MSG,
+            "system_action": "",
+        }
+    elif intent == "user_neutral_are_you_a_bot":
+        response = {
+            "has_response": True,
+            "recommendations": "",
+            "response": ARE_YOU_A_BOT_MSG,
+            "system_action": "",
+        }
+    elif intent == "user_neutral_what_is_your_name":
+        response = {
+            "has_response": True,
+            "recommendations": "",
+            "response": WHO_ARE_YOU_MSG,
+            "system_action": "",
+        }
+    elif intent == "user_neutral_who_do_you_work_for":
+        response = {
+            "has_response": True,
+            "recommendations": "",
+            "response": WHO_DO_YOU_WORK_FOR_MSG,
+            "system_action": "",
+        }
+    elif intent == "user_neutral_who_made_you":
+        response = {
+            "has_response": True,
+            "recommendations": "",
+            "response": WHO_MADE_YOU_MSG,
             "system_action": "",
         }
     elif intent in dialog.QA_INTENT_KEYS:
@@ -143,6 +151,7 @@ def interpret_msg(data: dict) -> str:
             "response": answer,
             "system_action": "",
         }
+
     else:
         fst_message = False
         response = {
@@ -155,47 +164,15 @@ def interpret_msg(data: dict) -> str:
     return json.dumps(response)
 
 
-def _asking_about_more_similar_products(ordinal: int, last_results) -> bool:
-    return last_results is not None and ordinal is not None
-
-
-def _update_provided_characteristics(
-    slots: list[str], values: list[str]
-) -> tuple[list[str], list[str]]:
-    global missing_characteristics
-    global provided_characteristics
-
-    if missing_characteristics and not slots:
-        # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any"
-        for characteristic in missing_characteristics:
-            provided_characteristics[characteristic] = ""
-
-    # we use all previously provided characteristics, but if user changed their mind newest value is used
-    for slot, value in zip(slots, values):
-        provided_characteristics[slot] = value
-    slots = list(provided_characteristics.keys())
-    values = list(provided_characteristics.values())
-
-    return slots, values
-
-
-def _update_missing_characteristics():
-    global missing_characteristics
-    missing_characteristics = [
-        characteristic
-        for characteristic in NECESSARY_CHARACTERISTICS
-        if characteristic not in provided_characteristics.keys()
-    ]
-
-
-def clothes_from_image(links_to_images: list[str], input_img: ByteString):
+def clothes_from_image(input_msg: str, input_img: ByteString):
     clothes = list()
-    for link in links_to_images:
-        caption = img_cap.get_caption_for_image(link)
-        print("caption: " + str(caption))
-        if caption is not None:
-            clothes_per_link = img_cap.get_clothing_items_from_caption(caption)
-            clothes.extend(clothes_per_link)
+    for part in input_msg.split():
+        if validators.url(part):
+            caption = img_cap.get_caption_for_image(part)
+            print("caption: " + str(caption))
+            if caption is not None:
+                clothes_per_link = img_cap.get_clothing_items_from_caption(caption)
+                clothes.extend(clothes_per_link)
     if input_img is not None:
         caption = img_cap.get_caption_for_image(input_img)
         print("caption: " + str(caption))
@@ -209,7 +186,7 @@ def clothes_from_image(links_to_images: list[str], input_img: ByteString):
 def dialog_turn():
     if request.is_json:
         data = request.json
-        response = interpret_msg(data)
+        response = interprete_msg(data)
     return response
 
 

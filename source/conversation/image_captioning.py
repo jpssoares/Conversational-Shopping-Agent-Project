@@ -2,19 +2,21 @@ import requests
 from PIL import Image
 from transformers import BlipProcessor, BlipForConditionalGeneration
 import source.conversation.gpt as gpt
+import validators
 from typing import Union, Any
 from ..controller import decode_img
-from .predefined_messages import GET_CLOTHING_ITEMS_PROMPT
 
-# processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
-# model = BlipForConditionalGeneration.from_pretrained(
-#     "Salesforce/blip-image-captioning-large"
-# )
+processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
+model = BlipForConditionalGeneration.from_pretrained(
+    "Salesforce/blip-image-captioning-large"
+)
+
+get_clothing_items_prompt = "Please return a string array with the different clothes with their characteristics or design, based on this input:\n'{input}'\nPlease only include the array in your response. Use \" instead of ' in your response."
 
 
 def get_clothing_items_from_caption(input_msg):
     # get str from gpt
-    txt = gpt.get_gpt_answer(GET_CLOTHING_ITEMS_PROMPT.format(input=input_msg))
+    txt = gpt.get_gpt_answer(get_clothing_items_prompt.format(input=input_msg))
     print(txt)
 
     # parse string
@@ -26,6 +28,7 @@ def get_clothing_items_from_caption(input_msg):
         words.append(txt[x : x + y])
         txt = txt[x + y + 1 :]
     words.remove("")
+    print(f"test: {words}")
     return words
 
 
@@ -52,13 +55,13 @@ def get_matching_clothes_quey(clothes, keys, values):
             for item in clothes:
                 if value in item:
                     return item
-    except:
+    except Exception as e:
         return None
 
 
-def get_caption_for_image(input: Union[str, Any]):
+def get_caption_for_image(input: str):
     try:
-        if type(input) is str:
+        if validators.url(input):
             raw_image = Image.open(requests.get(input, stream=True).raw).convert("RGB")
         else:
             raw_image = decode_img(input)
@@ -66,9 +69,8 @@ def get_caption_for_image(input: Union[str, Any]):
         # conditional image captioning
         text = "a person wearing"
         inputs = processor(raw_image, text, return_tensors="pt")
-
         out = model.generate(**inputs)
         result = processor.decode(out[0], skip_special_tokens=True)
     except:
-        return None
+        result = None
     return result

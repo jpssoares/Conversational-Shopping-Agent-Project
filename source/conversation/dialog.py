@@ -2,6 +2,7 @@ from models.model_utils import get_model
 from transformers import AutoTokenizer
 import source.config as config
 import transformers
+from source.conversation.predefined_messages import GET_ELEM_PROMPT
 
 QA_INTENT_KEYS = [
     "user_qa_check_information",

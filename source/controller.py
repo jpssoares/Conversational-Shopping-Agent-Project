@@ -1,15 +1,13 @@
 import base64
 import io
+
 from opensearchpy import OpenSearch
 import os
 import re
 from dotenv import load_dotenv
 from source.Encoder import Encoder
 from PIL import Image
-from typing import ByteString, List, Union
-import ast
-import validators
-import requests
+from typing import ByteString, List
 
 load_dotenv()
 
@@ -62,78 +60,33 @@ encoder = Encoder()
 
 
 def get_recommendations(results: List[dict]):
-    recommendations = list()
+    recommendations = []
 
     for r in results:
         recommendations.append(
             create_new_recommendation(
-                brand=r.get("product_brand"),
-                desc=r.get("product_short_description"),
-                id=r.get("product_id"),
-                img_path=r.get("product_image_path"),
-                attributes=r.get("product_attributes"),
-                materials=r.get("product_materials"),
+                r.get("product_brand"),
+                r.get("product_short_description"),
+                r.get("product_id"),
+                r.get("product_image_path"),
             )
         )
 
     return recommendations
 
 
-def create_new_recommendation(
-    brand="None",
-    desc="None",
-    id="None",
-    img_path="None",
-    attributes="None",
-    materials="None",
-):
+def create_new_recommendation(brand="None", desc="None", id="None", img_path="None"):
     recommendation = {
         "brand": brand,
         "description": desc,
         "id": id,
-        "attributes": _parse_attributes(attributes),
-        "materials": materials,
         "image_path": img_path,
     }
     return recommendation
 
 
-def _parse_attributes(attributes: Union[str, None]) -> list[dict]:
-    """
-    Attributes are a list serialized into a string or None.
-    """
-    return ast.literal_eval(attributes) if attributes is not None else list()
-
-
-def get_similar(recommendation: dict[str, Union[str, dict]], size_of_query=3):
-    qtxt = " ".join(
-        (
-            [
-                recommendation.get("brand", ""),
-                recommendation.get("description", ""),
-            ]
-            + [material for material in recommendation.get("materials")]
-            + [
-                attr
-                for attribute in _parse_attributes(recommendation.get("atributes"))
-                for attr in attribute.get("attribute_values", list())
-            ]
-        )
-    )
-    image_url = recommendation.get("image_path")
-    results = (
-        cross_modal_search(qtxt, image_url, size_of_query=size_of_query + 1)
-        if validators.url(image_url)
-        else text_embeddings_search(qtxt, size_of_query=size_of_query + 1)
-    )
-    results_without_the_same_item = [
-        item for item in results if item.get("id", 0) != recommendation.get("id", 1)
-    ]
-    return results_without_the_same_item[:size_of_query]
-
-
 def get_client_search(query_denc: dict):
-    response: dict = client.search(body=query_denc, index=index_name)
+    response = client.search(body=query_denc, index=index_name)
     results = [r["_source"] for r in response["hits"]["hits"]]
 
     recommendations = get_recommendations(results)
@@ -246,7 +199,7 @@ def search_products_boolean(qtxt: str, size_of_query=3):
     return get_client_search(query_denc)
 
 
-def text_embeddings_search(search_query: str, size_of_query=3) -> list[dict]:
+def text_embeddings_search(search_query: str, size_of_query=3):
     search_query_emb = encoder.encode(search_query)
     search_query_denc = {
         "size": size_of_query,
@@ -270,7 +223,7 @@ def decode_img(input_image_query: ByteString):
     return image
 
 
-def image_embeddings_search(input_image_query: ByteString) -> list[dict]:
+def image_embeddings_search(input_image_query: ByteString):
     img = decode_img(input_image_query)
     emb_img = encoder.process_image(img)
 
@@ -286,13 +239,9 @@ def image_embeddings_search(input_image_query: ByteString) -> list[dict]:
 
 
 def cross_modal_search(
-    input_text_query: str, input_image: Union[ByteString, str], size_of_query=3
-) -> list[dict]:
-    image = (
-        Image.open(requests.get(input_image, stream=True).raw).convert("RGB")
-        if type(input_image) is str
-        else decode_img(input_image)
-    )
+    input_text_query: str, input_image_query: ByteString, size_of_query=3
+):
+    image = decode_img(input_image_query)
 
     query_emb = encoder.encode_cross_modal(input_text_query, image)
 
@@ -328,7 +277,7 @@ def create_response_for_query(
     input_image_query: ByteString,
     keys: List[str],
     values: List[str],
-    search_type: str = None,
+    search_type="text_search",
 ):
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
     query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
