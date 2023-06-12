@@ -328,7 +328,7 @@ def create_response_for_query(
     input_image_query: ByteString,
     keys: List[str],
     values: List[str],
-    search_type="text_search",
+    search_type: str = None,
 ):
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
     query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
