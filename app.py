@@ -60,7 +60,7 @@ def interprete_msg(data: dict) -> str:
             if characteristic not in provided_characteristics.keys()
         ]
         if missing_characteristics:
-            response = response = {
+            response = {
                 "has_response": True,
                 "recommendations": None,
                 "response": missing_characteristics_response(missing_characteristics),
