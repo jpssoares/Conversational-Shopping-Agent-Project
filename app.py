@@ -7,8 +7,10 @@ import source.conversation.dialog as dialog
 import source.conversation.gpt as gpt
 import source.conversation.product_qa as product_qa
 import source.conversation.image_captioning as img_cap
+from source.conversation.ordinals import get_position
 from source.conversation.predefined_messages import *
 from typing import ByteString
+
 
 fst_message = True
 last_results = None
@@ -29,6 +31,17 @@ def interprete_msg(data: dict) -> str:
     input_msg: str = data.get("utterance")  # empty string if not present
     input_img = data.get("file")  # None if not present
     intent, slots, values = dialog.interpreter(input_msg)
+
+    ordinal = get_position(input_msg)
+    if last_results is not None and ordinal is not None:
+        last_results = ctrl.get_similar(last_results[ordinal])
+        response = {
+            "has_response": True,
+            "recommendations": last_results,
+            "response": SUCCESS_SEARCH_MSG,
+            "system_action": "",
+        }
+        return json.dumps(response)
 
     if missing_characteristics and not slots:
         # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any".
