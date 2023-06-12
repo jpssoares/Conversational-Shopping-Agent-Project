@@ -14,6 +14,13 @@ HELP_MSG = (
     + "Searching for Products with Cross-Modal Spaces\n<query_w1> <query_w2>\nExample: black boots\n"
 )
 
+ARE_YOU_A_BOT_MSG = "Yes, I am a dialog manager created by Ricardo Pereira, João Soares and Artur Stopa, programmed to respond to queries and generate text that mimics human conversation."
+
+WHO_ARE_YOU_MSG = "I am iFetch, a dialog manager created by Ricardo Pereira, João Soares and Artur Stopa, programmed to help you find out what you are looking for in this store."
+
+WHO_DO_YOU_WORK_FOR_MSG = "I work for Farfetch, a luxury fashion platform that sells products from over 700 boutiques and brands from around the world."
+
+WHO_MADE_YOU_MSG = "I was created by Ricardo Pereira, João Soares and Artur Stopa, three students from the MPDW course from UNL-NOVA."
 MSG_SEARCH_TYPE_CHANGED = "The search type was successfully changed"
 MSG_SEARCH_TYPE_CHANGE_FAILED = "That search type doesn't exist...\nTry another one"
 

@@ -113,16 +113,34 @@ def interprete_msg(data: dict) -> str:
             "response": GOODBYE_MSG,
             "system_action": "",
         }
-
-    elif intent in dialog.CHAT_INTENT_KEYS:
-        gpt_answer = gpt.get_gpt_answer(input_msg)
+    elif intent == "user_neutral_are_you_a_bot":
         response = {
             "has_response": True,
             "recommendations": "",
-            "response": gpt_answer,
+            "response": ARE_YOU_A_BOT_MSG,
             "system_action": "",
         }
-
+    elif intent == "user_neutral_what_is_your_name":
+        response = {
+            "has_response": True,
+            "recommendations": "",
+            "response": WHO_ARE_YOU_MSG,
+            "system_action": "",
+        }
+    elif intent == "user_neutral_who_do_you_work_for":
+        response = {
+            "has_response": True,
+            "recommendations": "",
+            "response": WHO_DO_YOU_WORK_FOR_MSG,
+            "system_action": "",
+        }
+    elif intent == "user_neutral_who_made_you":
+        response = {
+            "has_response": True,
+            "recommendations": "",
+            "response": WHO_MADE_YOU_MSG,
+            "system_action": "",
+        }
     elif intent in dialog.QA_INTENT_KEYS:
         answer = product_qa.get_qa_answer(intent, last_results, input_msg)
         response = {

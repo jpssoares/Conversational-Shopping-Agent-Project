@@ -4,14 +4,6 @@ import source.config as config
 import transformers
 from source.conversation.predefined_messages import GET_ELEM_PROMPT
 
-CHAT_INTENT_KEYS = [
-    "user_neutral_are_you_a_bot",
-    "user_neutral_what_is_your_name",
-    "user_neutral_where_are_you_from",
-    "user_neutral_who_do_you_work_for",
-    "user_neutral_who_made_you",
-]
-
 QA_INTENT_KEYS = [
     "user_qa_check_information",
     "user_qa_product_composition",
