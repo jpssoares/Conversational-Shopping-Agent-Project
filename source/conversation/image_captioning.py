@@ -4,18 +4,19 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 import source.conversation.gpt as gpt
 from typing import Union, Any
 from ..controller import decode_img
+from .predefined_messages import GET_CLOTHING_ITEMS_PROMPT
 
 # processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
 # model = BlipForConditionalGeneration.from_pretrained(
 #     "Salesforce/blip-image-captioning-large"
 # )
 
-get_clothing_items_prompt = "Please return a string array with the different clothes, based on this input:\n'{input}'\nPlease only include the array in your response. Use \" instead of ' in your response."
+
 
 
 def get_clothing_items_from_caption(input_msg):
     # get str from gpt
-    txt = gpt.get_gpt_answer(get_clothing_items_prompt.format(input=input_msg))
+    txt = gpt.get_gpt_answer(GET_CLOTHING_ITEMS_PROMPT.format(input=input_msg))
     print(txt)
 
     # parse string
