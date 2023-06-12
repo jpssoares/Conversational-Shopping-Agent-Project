@@ -33,7 +33,11 @@ def interprete_msg(data: dict) -> str:
     intent, slots, values = dialog.interpreter(input_msg)
 
     ordinal = get_position(input_msg)
-    if last_results is not None and ordinal is not None:
+    if (
+        last_results is not None
+        and ordinal is not None
+        and intent == "user_request_get_products"
+    ):
         last_results = ctrl.get_similar(last_results[ordinal])
         response = {
             "has_response": True,
@@ -124,34 +128,6 @@ def interprete_msg(data: dict) -> str:
             "has_response": True,
             "recommendations": "",
             "response": GOODBYE_MSG,
-            "system_action": "",
-        }
-    elif intent == "user_neutral_are_you_a_bot":
-        response = {
-            "has_response": True,
-            "recommendations": "",
-            "response": ARE_YOU_A_BOT_MSG,
-            "system_action": "",
-        }
-    elif intent == "user_neutral_what_is_your_name":
-        response = {
-            "has_response": True,
-            "recommendations": "",
-            "response": WHO_ARE_YOU_MSG,
-            "system_action": "",
-        }
-    elif intent == "user_neutral_who_do_you_work_for":
-        response = {
-            "has_response": True,
-            "recommendations": "",
-            "response": WHO_DO_YOU_WORK_FOR_MSG,
-            "system_action": "",
-        }
-    elif intent == "user_neutral_who_made_you":
-        response = {
-            "has_response": True,
-            "recommendations": "",
-            "response": WHO_MADE_YOU_MSG,
             "system_action": "",
         }
     elif intent in dialog.QA_INTENT_KEYS:

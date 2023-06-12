@@ -2,8 +2,6 @@ import json
 import source.conversation.gpt as gpt
 from source.conversation.predefined_messages import GET_ELEM_PROMPT
 
-# GET_ELEM_PROMPT = "I am building a dialog state tracking machine, and my model has a slot_key named 'element'. 'element' represent the position of the element in a given sequence. For example, 'what is the brand of the third product?' will give me a value for 'element'  that is 3. If you cant find a value for 'element', please set it as \"unknown\". If the user is referring to more than one position, set 'element' as \"all\".\nWhat would be the key-value pair for this phrase:\n'{input}'\nPlease return the result inside curly brackets."
-
 
 def word_for_position(pos):
     last_digit_unsigned = abs(pos) % 10
@@ -55,7 +53,7 @@ def get_qa_answer(intent, results, input_msg):
     gpt_answer = gpt.get_gpt_answer(GET_ELEM_PROMPT.format(input=input_msg)).replace(
         "'", '"'
     )
-    #print(gpt_answer)
+    # print(gpt_answer)
     elem_json = json.loads(gpt_answer)
     elem = elem_json["element"]
 

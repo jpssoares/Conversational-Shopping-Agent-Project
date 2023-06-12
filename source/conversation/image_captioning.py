@@ -12,8 +12,6 @@ from .predefined_messages import GET_CLOTHING_ITEMS_PROMPT
 # )
 
 
-
-
 def get_clothing_items_from_caption(input_msg):
     # get str from gpt
     txt = gpt.get_gpt_answer(GET_CLOTHING_ITEMS_PROMPT.format(input=input_msg))

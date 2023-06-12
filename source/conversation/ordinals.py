@@ -1,6 +1,7 @@
 import spacy
-import numerizer
+import numerizer  # it's necessary for .numerize() to work
 import re
+from fuzzywuzzy import fuzz
 
 nlp = spacy.load("en_core_web_sm")
 ordinal_suffixes = ["st", "nd", "rd", "th"]
@@ -14,6 +15,9 @@ def get_position(input_msg: str) -> int:
         for num in numerical.split()
         if _is_ordinal(num)
     ]
+    ordinals.extend(
+        [-1 for word in input_msg.split() if fuzz.ratio(word.lower(), "last") > 80]
+    )
     return ordinals[0] if ordinals else None
 
 

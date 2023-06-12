@@ -105,7 +105,7 @@ def _parse_attributes(attributes: Union[str, None]) -> list[dict]:
     return ast.literal_eval(attributes) if attributes is not None else list()
 
 
-def get_similar(recommendation: dict[str, Union[str, dict]]):
+def get_similar(recommendation: dict[str, Union[str, dict]], size_of_query=3):
     qtxt = " ".join(
         (
             [
@@ -121,11 +121,15 @@ def get_similar(recommendation: dict[str, Union[str, dict]]):
         )
     )
     image_url = recommendation.get("image_path")
-    return (
-        cross_modal_search(qtxt, image_url)
+    results = (
+        cross_modal_search(qtxt, image_url, size_of_query=size_of_query + 1)
         if validators.url(image_url)
-        else text_embeddings_search(qtxt)
+        else text_embeddings_search(qtxt, size_of_query=size_of_query + 1)
     )
+    results_without_the_same_item = [
+        item for item in results if item.get("id", 0) != recommendation.get("id", 1)
+    ]
+    return results_without_the_same_item[:size_of_query]
 
 
 def get_client_search(query_denc: dict):
@@ -242,7 +246,7 @@ def search_products_boolean(qtxt: str, size_of_query=3):
     return get_client_search(query_denc)
 
 
-def text_embeddings_search(search_query: str, size_of_query=3):
+def text_embeddings_search(search_query: str, size_of_query=3) -> list[dict]:
     search_query_emb = encoder.encode(search_query)
     search_query_denc = {
         "size": size_of_query,
@@ -266,7 +270,7 @@ def decode_img(input_image_query: ByteString):
     return image
 
 
-def image_embeddings_search(input_image_query: ByteString):
+def image_embeddings_search(input_image_query: ByteString) -> list[dict]:
     img = decode_img(input_image_query)
     emb_img = encoder.process_image(img)
 
@@ -283,7 +287,7 @@ def image_embeddings_search(input_image_query: ByteString):
 
 def cross_modal_search(
     input_text_query: str, input_image: Union[ByteString, str], size_of_query=3
-):
+) -> list[dict]:
     image = (
         Image.open(requests.get(input_image, stream=True).raw).convert("RGB")
         if type(input_image) is str
