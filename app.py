@@ -23,7 +23,7 @@ app.config["CORS_HEADERS"] = "Content-Type"
 cors = CORS(app)
 
 
-def interprete_msg(data: dict) -> str:
+def interpret_msg(data: dict) -> str:
     global fst_message
     global last_results
     global provided_characteristics
@@ -33,11 +33,7 @@ def interprete_msg(data: dict) -> str:
     intent, slots, values = dialog.interpreter(input_msg)
 
     ordinal = get_position(input_msg)
-    if (
-        last_results is not None
-        and ordinal is not None
-        and intent == "user_request_get_products"
-    ):
+    if _asking_about_more_similar_products(intent, ordinal, last_results):
         last_results = ctrl.get_similar(last_results[ordinal])
         response = {
             "has_response": True,
@@ -47,16 +43,7 @@ def interprete_msg(data: dict) -> str:
         }
         return json.dumps(response)
 
-    if missing_characteristics and not slots:
-        # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any".
-        for characteristic in missing_characteristics:
-            provided_characteristics[characteristic] = ""
-
-    # we use all previously provided characteristics, but if user changed their mind newest value is used
-    for slot, value in zip(slots, values):
-        provided_characteristics[slot] = value
-    slots = list(provided_characteristics.keys())
-    values = list(provided_characteristics.values())
+    slots, values = _update_missing_characteristics(slots, values)
 
     clothes = clothes_from_image(input_msg, input_img)
     if (
@@ -114,7 +101,6 @@ def interprete_msg(data: dict) -> str:
             "response": BEGGINING_MSG,
             "system_action": "",
         }
-
     elif intent == "user_neutral_what_can_i_ask_you":
         response = {
             "has_response": True,
@@ -122,7 +108,6 @@ def interprete_msg(data: dict) -> str:
             "response": HELP_MSG,
             "system_action": "",
         }
-
     elif intent == "user_neutral_goodbye":
         response = {
             "has_response": True,
@@ -138,7 +123,6 @@ def interprete_msg(data: dict) -> str:
             "response": answer,
             "system_action": "",
         }
-
     else:
         fst_message = False
         response = {
@@ -149,6 +133,36 @@ def interprete_msg(data: dict) -> str:
         }
 
     return json.dumps(response)
+
+
+def _asking_about_more_similar_products(
+    intent: str, ordinal: int, last_results
+) -> bool:
+    return (
+        last_results is not None
+        and ordinal is not None
+        and intent == "user_request_get_products"
+    )
+
+
+def _update_missing_characteristics(
+    slots: list[str], values: list[str]
+) -> tuple[list[str], list[str]]:
+    global missing_characteristics
+    global provided_characteristics
+
+    if missing_characteristics and not slots:
+        # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any"
+        for characteristic in missing_characteristics:
+            provided_characteristics[characteristic] = ""
+
+    # we use all previously provided characteristics, but if user changed their mind newest value is used
+    for slot, value in zip(slots, values):
+        provided_characteristics[slot] = value
+    slots = list(provided_characteristics.keys())
+    values = list(provided_characteristics.values())
+
+    return slots, values
 
 
 def clothes_from_image(input_msg: str, input_img: ByteString):
@@ -173,7 +187,7 @@ def clothes_from_image(input_msg: str, input_img: ByteString):
 def dialog_turn():
     if request.is_json:
         data = request.json
-        response = interprete_msg(data)
+        response = interpret_msg(data)
     return response
 
 
