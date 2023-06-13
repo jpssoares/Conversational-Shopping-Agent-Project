@@ -9,7 +9,7 @@ import source.conversation.product_qa as product_qa
 import source.conversation.image_captioning as img_cap
 from source.conversation.predefined_messages import *
 from source.image_handling import load_image
-from source.conversation.ordinals import get_position, preprocess_input_msg
+from source.conversation.text_processing import get_position, preprocess_input_msg
 
 fst_message = True
 last_results = None
