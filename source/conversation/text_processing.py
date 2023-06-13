@@ -12,7 +12,9 @@ ORDINA_PATTERN = r"\d+\w{2}"
 
 def preprocess_input_msg(text: str, values: list[str]) -> str:
     no_stopwords = set([token.text for token in nlp(text) if not token.is_stop])
-    no_stopwords.update(values)
+    no_stopwords.update(
+        [v for value in values for v in value.split() if v != "[intent]"]
+    )
     processed_msg = " ".join(no_stopwords)
     return processed_msg
 
@@ -42,3 +44,9 @@ def _is_ordinal(numerical: str):
             print(f"how is {numerical} ordinal lmao")
             return True
     return False
+
+
+if __name__ == "__main__":
+    values = ["[intent] pants"]
+    x = [v for value in values for v in value.split() if v != "[intent]"]
+    print(x)

@@ -40,7 +40,7 @@ def interprete_msg(data: dict) -> str:
     input_msg = preprocess_input_msg(input_msg, values)
     print(
         f"Processed message: '{input_msg}', intent: '{intent}', provided characteristics: '{provided_characteristics}'",
-        f"Detected slots: '{slots}', values: '{values}, ordinal: {ordinal}",
+        f"Detected slots: '{slots}', values: '{values}', ordinal: {ordinal}",
         sep="\n",
     )
     if (
@@ -93,8 +93,15 @@ def interprete_msg(data: dict) -> str:
             }
             return json.dumps(response)
         else:
-            provided_characteristics = dict()
             missing_characteristics = list()
+            try:
+                provided_characteristics = {
+                    "category_gender_name": provided_characteristics.get(
+                        "category_gender_name"
+                    )
+                }
+            except KeyError:
+                provided_characteristics = dict()
 
         last_results = ctrl.create_response_for_query(
             input_msg, input_img, slots, values, search_type
