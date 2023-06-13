@@ -224,12 +224,14 @@ def decode_img(input_image_query: ByteString):
     image = Image.open(io.BytesIO(q_image))
     return image
 
+
 def get_image_from_url(input: str):
     print(f"input: {input}")
     for part in input.split():
         if validators.url(part):
             return Image.open(requests.get(part, stream=True).raw).convert("RGB")
     return None
+
 
 def image_embeddings_search(input_image_query: Image, size_of_query=3):
     emb_img = encoder.process_image(input_image_query)

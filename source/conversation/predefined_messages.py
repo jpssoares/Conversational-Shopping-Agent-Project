@@ -25,6 +25,7 @@ MSG_SEARCH_TYPE_CHANGED = "The search type was successfully changed"
 MSG_SEARCH_TYPE_CHANGE_FAILED = "That search type doesn't exist...\nTry another one"
 
 GET_ELEM_PROMPT = "I am building a dialog state tracking machine, and my model has a slot_key named 'element'. 'element' represent the position of the element in a given sequence. For example, 'what is the brand of the third product?' will give me a value for 'element'  that is 3. If you cant find a value for 'element', please set is as unknown. If the user is refering to more than one position, set 'element' as all.\nWhat would be the key-value pair for this phrase:\n'{input}'\nPlease return the result inseide curly brackets."
+GET_CLOTHING_ITEMS_PROMPT = "Please return a string array with the different clothes with their characteristics or design, based on this input:\n'{input}'\nPlease only include the array in your response. Use \" instead of ' in your response."
 
 
 def missing_characteristics_response(missing_characteristics: list) -> str:

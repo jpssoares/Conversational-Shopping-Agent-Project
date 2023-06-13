@@ -54,7 +54,7 @@ def get_qa_answer(intent, results, input_msg):
     gpt_answer = gpt.get_gpt_answer(get_elem_prompt.format(input=input_msg)).replace(
         "'", '"'
     )
-    #print(gpt_answer)
+    # print(gpt_answer)
     elem_json = json.loads(gpt_answer)
     elem = elem_json["element"]
 
