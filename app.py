@@ -9,7 +9,7 @@ import source.conversation.product_qa as product_qa
 import source.conversation.image_captioning as img_cap
 from source.conversation.predefined_messages import *
 from source.image_handling import load_image
-from source.conversation.ordinals import get_position
+from source.conversation.ordinals import get_position, preprocess_input_msg
 
 fst_message = True
 last_results = None
@@ -37,8 +37,9 @@ def interprete_msg(data: dict) -> str:
         slots, values, provided_characteristics, missing_characteristics
     )
     ordinal = get_position(input_msg)
+    input_msg = preprocess_input_msg(input_msg, values)
     print(
-        f"Input message: '{input_img}', intent: '{intent}', provided characteristics: '{provided_characteristics}'",
+        f"Processed message: '{input_msg}', intent: '{intent}', provided characteristics: '{provided_characteristics}'",
         f"Detected slots: '{slots}', values: '{values}, ordinal: {ordinal}",
         sep="\n",
     )
@@ -203,10 +204,10 @@ def update_provided_characteristics(
             slot = "category"
         provided_characteristics[slot] = value
 
-    slots = list(provided_characteristics.keys())
-    values = list(provided_characteristics.values())
+    updated_slots = list(provided_characteristics.keys())
+    update_values = list(provided_characteristics.values())
 
-    return slots, values, provided_characteristics
+    return updated_slots, update_values, provided_characteristics
 
 
 def update_missing_characteristics(provided_characteristics: dict[str, str]):

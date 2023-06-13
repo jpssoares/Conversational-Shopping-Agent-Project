@@ -5,7 +5,15 @@ from fuzzywuzzy import fuzz
 from typing import Union
 
 nlp = spacy.load("en_core_web_sm")
+nlp.Defaults.stop_words |= {"want", "would", "like", "looking", "for", "searching"}
 ordinal_suffixes = ["st", "nd", "rd", "th"]
+
+
+def preprocess_input_msg(text: str, values: list[str]) -> str:
+    no_stopwords = set([token.text for token in nlp(text) if not token.is_stop])
+    no_stopwords.update(values)
+    processed_msg = " ".join(no_stopwords)
+    return processed_msg
 
 
 def get_position(input_msg: str) -> Union[int, None]:
@@ -31,3 +39,7 @@ def _is_ordinal(numerical: str):
         if suffix in numerical:
             return True
     return False
+
+
+if __name__ == "__main__":
+    print(preprocess_input_msg("i want male udnerwear", ["male"]))
