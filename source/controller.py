@@ -1,15 +1,11 @@
-import base64
-import io
-
-import requests
 from opensearchpy import OpenSearch
 import os
 import re
 from dotenv import load_dotenv
-import validators
 from source.Encoder import Encoder
+from source.image_handling import decode_img, get_image_from_url
 from PIL import Image
-from typing import ByteString, List
+from typing import List
 
 load_dotenv()
 
@@ -217,20 +213,6 @@ def text_embeddings_search(search_query: str, size_of_query=3):
     }
 
     return get_client_search(search_query_denc)
-
-
-def decode_img(input_image_query: ByteString):
-    q_image = base64.b64decode(input_image_query.split(",")[1])
-    image = Image.open(io.BytesIO(q_image))
-    return image
-
-
-def get_image_from_url(input: str):
-    print(f"input: {input}")
-    for part in input.split():
-        if validators.url(part):
-            return Image.open(requests.get(part, stream=True).raw).convert("RGB")
-    return None
 
 
 def image_embeddings_search(input_image_query: Image, size_of_query=3):
