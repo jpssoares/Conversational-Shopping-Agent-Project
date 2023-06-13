@@ -6,7 +6,8 @@ from typing import Union
 
 nlp = spacy.load("en_core_web_sm")
 nlp.Defaults.stop_words |= {"want", "would", "like", "looking", "for", "searching"}
-ordinal_suffixes = ["st", "nd", "rd", "th"]
+ORDINAL_SUFFIXES = ["st", "nd", "rd", "th"]
+ORDINA_PATTERN = r"\d+\w{2}"
 
 
 def preprocess_input_msg(text: str, values: list[str]) -> str:
@@ -18,6 +19,7 @@ def preprocess_input_msg(text: str, values: list[str]) -> str:
 
 def get_position(input_msg: str) -> Union[int, None]:
     numericals: dict[str, str] = nlp(input_msg)._.numerize()
+
     ordinals = [
         _create_index_from_ordinal(num)
         for numerical in numericals.values()
@@ -35,11 +37,8 @@ def _create_index_from_ordinal(num: str) -> int:
 
 
 def _is_ordinal(numerical: str):
-    for suffix in ordinal_suffixes:
-        if suffix in numerical:
+    for suffix in ORDINAL_SUFFIXES:
+        if suffix in numerical and re.search(ORDINA_PATTERN, numerical):
+            print(f"how is {numerical} ordinal lmao")
             return True
     return False
-
-
-if __name__ == "__main__":
-    print(preprocess_input_msg("i want male udnerwear", ["male"]))
