@@ -39,6 +39,8 @@ def interprete_msg(data: dict) -> str:
 
     # we use all previously provided characteristics, but if user changed their mind newest value is used
     for slot, value in zip(slots, values):
+        if slot == "dress_silhouette":
+            slot = "category"
         provided_characteristics[slot] = value
 
     print(f"provided_characteristics: {provided_characteristics}")

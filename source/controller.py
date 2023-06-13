@@ -283,7 +283,10 @@ def create_response_for_query(
     query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
 
     if search_type == "vqa_search":
-        return text_embeddings_search(input_text_query)
+        if input_image_query is not None:
+            return cross_modal_search(input_text_query, input_image_query)
+        else:
+            return text_embeddings_search(input_text_query)
     elif search_type == "full_text":
         return search_products_full_text(query_from_key_value_pairs)
     elif search_type == "boolean_search":
