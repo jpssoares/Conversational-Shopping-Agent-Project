@@ -12,6 +12,7 @@ from source.conversation.predefined_messages import *
 fst_message = True
 last_results = None
 provided_characteristics = dict()
+ignore_characteristics = False
 NECESSARY_CHARACTERISTICS = ["category"]
 missing_characteristics = list()
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -25,6 +26,7 @@ def interprete_msg(data: dict) -> str:
     global fst_message
     global last_results
     global provided_characteristics
+    global ignore_characteristics
     global missing_characteristics
     input_msg: str = data.get("utterance")  # empty string if not present
     input_img = data.get("file")  # None if not present
@@ -34,15 +36,17 @@ def interprete_msg(data: dict) -> str:
         input_img = ctrl.decode_img(input_img)
 
     intent, slots, values = dialog.interpreter(input_msg)
+    if input_msg == "" and input_img is not None:
+        ignore_characteristics = True
 
-    if missing_characteristics and not slots:
+    if (missing_characteristics and not slots) or ignore_characteristics:
         # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any".
         for characteristic in missing_characteristics:
             provided_characteristics[characteristic] = ""
 
     # we use all previously provided characteristics, but if user changed their mind newest value is used
     for slot, value in zip(slots, values):
-        if slot == "dress_silhouette":
+        if slot == "dress_silhouette" or slot == "hat_style":
             slot = "category"
         provided_characteristics[slot] = value
 
@@ -56,7 +60,9 @@ def interprete_msg(data: dict) -> str:
         or (input_msg == "" and input_img is not None)
         or missing_characteristics
     ):
-        if clothes:
+        if ignore_characteristics:
+            search_type = "image_search"
+        elif clothes:
             match = img_cap.get_matching_clothes_quey(clothes, slots, values)
             if match is not None:
                 input_msg = match
@@ -71,7 +77,7 @@ def interprete_msg(data: dict) -> str:
             for characteristic in NECESSARY_CHARACTERISTICS
             if characteristic not in provided_characteristics.keys()
         ]
-        if missing_characteristics:
+        if missing_characteristics and not ignore_characteristics:
             response = response = {
                 "has_response": True,
                 "recommendations": None,
@@ -171,6 +177,7 @@ def interprete_msg(data: dict) -> str:
             "system_action": "",
         }
 
+    ignore_characteristics = False
     return json.dumps(response)
 
 
