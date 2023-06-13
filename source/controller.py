@@ -1,10 +1,12 @@
 import base64
 import io
 
+import requests
 from opensearchpy import OpenSearch
 import os
 import re
 from dotenv import load_dotenv
+import validators
 from source.Encoder import Encoder
 from PIL import Image
 from typing import ByteString, List
@@ -222,13 +224,18 @@ def decode_img(input_image_query: ByteString):
     image = Image.open(io.BytesIO(q_image))
     return image
 
+def get_image_from_url(input: str):
+    print(f"input: {input}")
+    for part in input.split():
+        if validators.url(part):
+            return Image.open(requests.get(part, stream=True).raw).convert("RGB")
+    return None
 
-def image_embeddings_search(input_image_query: ByteString):
-    img = decode_img(input_image_query)
-    emb_img = encoder.process_image(img)
+def image_embeddings_search(input_image_query: Image, size_of_query=3):
+    emb_img = encoder.process_image(input_image_query)
 
     query_denc = {
-        "size": 3,
+        "size": size_of_query,
         "_source": PRODUCT_FIELDS,
         "query": {
             "knn": {"image_embedding": {"vector": emb_img[0].detach().numpy(), "k": 2}}
@@ -239,11 +246,9 @@ def image_embeddings_search(input_image_query: ByteString):
 
 
 def cross_modal_search(
-    input_text_query: str, input_image_query: ByteString, size_of_query=3
+    input_text_query: str, input_image_query: Image, size_of_query=3
 ):
-    image = decode_img(input_image_query)
-
-    query_emb = encoder.encode_cross_modal(input_text_query, image)
+    query_emb = encoder.encode_cross_modal(input_text_query, input_image_query)
 
     query_denc = {
         "size": size_of_query,
@@ -261,7 +266,7 @@ def cross_modal_search(
     return get_client_search(query_denc)
 
 
-def create_query_from_key_value_pais(keys: List[str], values: List[str]):
+def create_query_from_key_value_pairs(keys: List[str], values: List[str]):
     result_query = ""
     idx = 0
     while idx < len(keys):
@@ -274,19 +279,16 @@ def create_query_from_key_value_pais(keys: List[str], values: List[str]):
 
 def create_response_for_query(
     input_text_query: str,
-    input_image_query: ByteString,
+    input_image_query: Image,
     keys: List[str],
     values: List[str],
     search_type="text_search",
 ):
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
-    query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
+    query_from_key_value_pairs = create_query_from_key_value_pairs(keys, values)
 
     if search_type == "vqa_search":
-        if input_image_query is not None:
-            return cross_modal_search(input_text_query, input_image_query)
-        else:
-            return text_embeddings_search(input_text_query)
+        return cross_modal_search(input_text_query, input_image_query)
     elif search_type == "full_text":
         return search_products_full_text(query_from_key_value_pairs)
     elif search_type == "boolean_search":

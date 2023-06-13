@@ -1,15 +1,13 @@
+from PIL.Image import Image
 from flask import Flask, request
 from flask_cors import CORS
 import json
 import os
-import validators
 import source.controller as ctrl
 import source.conversation.dialog as dialog
-import source.conversation.gpt as gpt
 import source.conversation.product_qa as product_qa
 import source.conversation.image_captioning as img_cap
 from source.conversation.predefined_messages import *
-from typing import ByteString
 
 fst_message = True
 last_results = None
@@ -30,6 +28,11 @@ def interprete_msg(data: dict) -> str:
     global missing_characteristics
     input_msg: str = data.get("utterance")  # empty string if not present
     input_img = data.get("file")  # None if not present
+    if input_img is None:
+        input_img = ctrl.get_image_from_url(input_msg)
+    else:
+        input_img = ctrl.decode_img(input_img)
+
     intent, slots, values = dialog.interpreter(input_msg)
 
     if missing_characteristics and not slots:
@@ -47,7 +50,7 @@ def interprete_msg(data: dict) -> str:
     slots = list(provided_characteristics.keys())
     values = list(provided_characteristics.values())
 
-    clothes = clothes_from_image(input_msg, input_img)
+    clothes = clothes_from_image(input_img)
     if (
         intent == "user_request_get_products"
         or (input_msg == "" and input_img is not None)
@@ -171,16 +174,10 @@ def interprete_msg(data: dict) -> str:
     return json.dumps(response)
 
 
-def clothes_from_image(input_msg: str, input_img: ByteString):
+def clothes_from_image(input_img: Image):
     clothes = list()
-    for part in input_msg.split():
-        if validators.url(part):
-            caption = img_cap.get_caption_for_image(part)
-            print("caption: " + str(caption))
-            if caption is not None:
-                clothes_per_link = img_cap.get_clothing_items_from_caption(caption)
-                clothes.extend(clothes_per_link)
     if input_img is not None:
+        print("input_img: " + str(input_img))
         caption = img_cap.get_caption_for_image(input_img)
         print("caption: " + str(caption))
         if caption is not None:
