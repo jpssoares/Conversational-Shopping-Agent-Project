@@ -1,11 +1,13 @@
 from opensearchpy import OpenSearch
 import os
 import re
+import ast
+import validators
 from dotenv import load_dotenv
 from source.Encoder import Encoder
-from source.image_handling import decode_img, get_image_from_url
+from source.image_handling import load_image
 from PIL import Image
-from typing import List
+from typing import List, Union
 
 load_dotenv()
 
@@ -67,17 +69,28 @@ def get_recommendations(results: List[dict]):
                 r.get("product_short_description"),
                 r.get("product_id"),
                 r.get("product_image_path"),
+                r.get("product_attributes"),
+                r.get("product_materials"),
             )
         )
 
     return recommendations
 
 
-def create_new_recommendation(brand="None", desc="None", id="None", img_path="None"):
+def create_new_recommendation(
+    brand="None",
+    desc="None",
+    id="None",
+    img_path="None",
+    attributes="None",
+    materials="None",
+):
     recommendation = {
         "brand": brand,
         "description": desc,
         "id": id,
+        "attributes": _parse_attributes(attributes),
+        "materials": materials,
         "image_path": img_path,
     }
     return recommendation
@@ -250,6 +263,47 @@ def cross_modal_search(
     return get_client_search(query_denc)
 
 
+def _parse_attributes(attributes: str) -> list[dict]:
+    """
+    Attributes are a list serialized into a string or None.
+    """
+    try:
+        attrs: list = ast.literal_eval(attributes)
+    except ValueError:
+        attrs = list()
+    return attrs
+
+
+def get_similar(recommendation: dict[str, Union[str, dict]], size_of_query=3):
+    qtxt = " ".join(
+        (
+            [
+                recommendation.get("brand", ""),
+                recommendation.get("description", ""),
+            ]
+            + [material for material in recommendation.get("materials", list())]
+            + [
+                attr
+                for attribute in _parse_attributes(
+                    recommendation.get("attributes", list())
+                )
+                for attr in attribute.get("attribute_values", list())
+            ]
+        )
+    )
+    image_url = recommendation.get("image_path")
+    image = load_image(image_url)
+    results = (
+        cross_modal_search(qtxt, image, size_of_query=size_of_query + 1)
+        if validators.url(image_url)
+        else text_embeddings_search(qtxt, size_of_query=size_of_query + 1)
+    )
+    results_without_the_same_item = [
+        item for item in results if item.get("id", 0) != recommendation.get("id", 1)
+    ]
+    return results_without_the_same_item[:size_of_query]
+
+
 def create_query_from_key_value_pairs(keys: List[str], values: List[str]):
     result_query = ""
     idx = 0
@@ -268,6 +322,7 @@ def create_response_for_query(
     values: List[str],
     search_type="text_search",
 ):
+    print(f"Creating response for query: '{input_text_query}' {input_image_query}")
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
     query_from_key_value_pairs = create_query_from_key_value_pairs(keys, values)
 

@@ -8,6 +8,8 @@ import source.conversation.dialog as dialog
 import source.conversation.product_qa as product_qa
 import source.conversation.image_captioning as img_cap
 from source.conversation.predefined_messages import *
+from source.image_handling import load_image
+from source.conversation.ordinals import get_position
 
 fst_message = True
 last_results = None
@@ -28,50 +30,60 @@ def interprete_msg(data: dict) -> str:
     global missing_characteristics
     input_msg: str = data.get("utterance")  # empty string if not present
     input_img = data.get("file")  # None if not present
-    if input_img is None:
-        input_img = ctrl.get_image_from_url(input_msg)
-    else:
-        input_img = ctrl.decode_img(input_img)
+    input_img = load_image(input_msg, input_img)
 
     intent, slots, values = dialog.interpreter(input_msg)
+    slots, values, provided_characteristics = update_provided_characteristics(
+        slots, values, provided_characteristics, missing_characteristics
+    )
+    ordinal = get_position(input_msg)
+    print(
+        f"Input message: '{input_img}', intent: '{intent}', provided characteristics: '{provided_characteristics}'",
+        f"Detected slots: '{slots}', values: '{values}, ordinal: {ordinal}",
+        sep="\n",
+    )
+    if (
+        last_results is not None
+        and ordinal is not None
+        and intent not in dialog.QA_INTENT_KEYS
+    ):
+        print(f"Returning more products like {last_results[ordinal]}")
+        last_results = ctrl.get_similar(last_results[ordinal])
+        response = {
+            "has_response": True,
+            "recommendations": last_results,
+            "response": SUCCESS_SEARCH_MSG,
+            "system_action": "",
+        }
+        return json.dumps(response)
 
-    if missing_characteristics and not slots:
-        # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any".
-        for characteristic in missing_characteristics:
-            provided_characteristics[characteristic] = ""
-
-    # we use all previously provided characteristics, but if user changed their mind newest value is used
-    for slot, value in zip(slots, values):
-        if slot == "dress_silhouette":
-            slot = "category"
-        provided_characteristics[slot] = value
-
-    print(f"provided_characteristics: {provided_characteristics}")
-    slots = list(provided_characteristics.keys())
-    values = list(provided_characteristics.values())
-
-    clothes = clothes_from_image(input_img)
     if (
         intent == "user_request_get_products"
         or (input_msg == "" and input_img is not None)
         or missing_characteristics
     ):
+
+        clothes = clothes_from_image(input_img)
+        print(f"Trying VQA, found clothes: {clothes}")
         if clothes:
             match = img_cap.get_matching_clothes_quey(clothes, slots, values)
             if match is not None:
                 input_msg = match
                 search_type = "vqa_search"
+                print(f"Searching with VQA for '{input_msg}'")
             else:
                 search_type = "text_search"
         else:
+            print(f"Clothes on image not found")
             search_type = "text_search"
 
-        missing_characteristics = [
-            characteristic
-            for characteristic in NECESSARY_CHARACTERISTICS
-            if characteristic not in provided_characteristics.keys()
-        ]
+        missing_characteristics = update_missing_characteristics(
+            provided_characteristics
+        )
         if missing_characteristics:
+            print(
+                f"Asking for information about missing characteristics: {missing_characteristics}"
+            )
             response = response = {
                 "has_response": True,
                 "recommendations": None,
@@ -172,6 +184,37 @@ def interprete_msg(data: dict) -> str:
         }
 
     return json.dumps(response)
+
+
+def update_provided_characteristics(
+    slots: list[str],
+    values: list[str],
+    provided_characteristics: dict[str, str],
+    missing_characteristics: list[str],
+):
+    if missing_characteristics and not slots:
+        # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any".
+        for characteristic in missing_characteristics:
+            provided_characteristics[characteristic] = ""
+
+    # we use all previously provided characteristics, but if user changed their mind newest value is used
+    for slot, value in zip(slots, values):
+        if slot == "dress_silhouette":
+            slot = "category"
+        provided_characteristics[slot] = value
+
+    slots = list(provided_characteristics.keys())
+    values = list(provided_characteristics.values())
+
+    return slots, values, provided_characteristics
+
+
+def update_missing_characteristics(provided_characteristics: dict[str, str]):
+    return [
+        characteristic
+        for characteristic in NECESSARY_CHARACTERISTICS
+        if characteristic not in provided_characteristics.keys()
+    ]
 
 
 def clothes_from_image(input_img: Image):

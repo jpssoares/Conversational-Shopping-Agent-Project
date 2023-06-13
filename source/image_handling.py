@@ -6,7 +6,7 @@ import requests
 from typing import Union
 
 
-def load_image(input_msg: str, input_img: Union[str, None]):
+def load_image(input_msg: str, input_img: Union[str, None] = None):
     if input_img is None:
         input_img = get_image_from_url(input_msg)
     else:
