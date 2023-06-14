@@ -36,7 +36,7 @@ def interprete_msg(data: dict) -> str:
     slots, values, provided_characteristics = update_provided_characteristics(
         slots, values, provided_characteristics, missing_characteristics
     )
-    ordinal = product_qa.get_desired_item_position(input_msg)
+    ordinal = get_position(input_msg)
     input_msg = preprocess_input_msg(input_msg, values)
     print(
         f"Processed message: '{input_msg}', intent: '{intent}', provided characteristics: '{provided_characteristics}'",
