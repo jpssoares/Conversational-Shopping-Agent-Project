@@ -41,12 +41,5 @@ def _create_index_from_ordinal(num: str) -> int:
 def _is_ordinal(numerical: str):
     for suffix in ORDINAL_SUFFIXES:
         if suffix in numerical and re.search(ORDINA_PATTERN, numerical):
-            print(f"how is {numerical} ordinal lmao")
             return True
     return False
-
-
-if __name__ == "__main__":
-    values = ["[intent] pants"]
-    x = [v for value in values for v in value.split() if v != "[intent]"]
-    print(x)
