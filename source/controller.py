@@ -320,26 +320,31 @@ def create_response_for_query(
     input_image_query: Image,
     keys: List[str],
     values: List[str],
-    search_type="text_search",
+    search_type="auto",
 ):
     print(f"Creating response for query: '{input_text_query}' {input_image_query}")
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
     query_from_key_value_pairs = create_query_from_key_value_pairs(keys, values)
 
     if search_type == "vqa_search":
-        print("vqa search")
+        print("Using QVA Cross-Modal Search")
         return cross_modal_search(input_text_query, input_image_query)
+    elif search_type == "auto":
+        if input_text_query != "" and input_image_query is not None:
+            print("Using Cross-Modal Search")
+            return cross_modal_search(query_from_key_value_pairs, input_image_query)
+        if input_image_query is not None:
+            print("Using inage embeddings search")
+            return image_embeddings_search(input_image_query)
+        if input_text_query != "":
+            print("Usinng text embeddings search")
+            return text_embeddings_search(query_from_key_value_pairs)
+
+        print("Neither text nor image provided, nothing to search for")
+        return None
     elif search_type == "full_text":
         return search_products_full_text(query_from_key_value_pairs)
     elif search_type == "boolean_search":
         return search_products_boolean(query_from_key_value_pairs)
     elif search_type == "text_and_attrs":
         return search_products_with_text_and_attributes(input_text_query)
-    else:
-        print(input_image_query)
-        if input_image_query == "" or input_image_query is None:
-            print("text_search")
-            return text_embeddings_search(query_from_key_value_pairs)
-        else:
-            print("image_search")
-            return image_embeddings_search(input_image_query)

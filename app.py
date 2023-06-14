@@ -14,7 +14,6 @@ from source.conversation.text_processing import get_position, preprocess_input_m
 fst_message = True
 last_results = None
 provided_characteristics = dict()
-ignore_characteristics = False
 NECESSARY_CHARACTERISTICS = ["category"]
 missing_characteristics = list()
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -28,21 +27,21 @@ def interprete_msg(data: dict) -> str:
     global fst_message
     global last_results
     global provided_characteristics
-    global ignore_characteristics
     global missing_characteristics
     input_msg: str = data.get("utterance")  # empty string if not present
     input_img = data.get("file")  # None if not present
     input_img = load_image(input_msg, input_img)
 
     intent, slots, values = dialog.interpreter(input_msg)
-    (
-        slots,
-        values,
-        provided_characteristics,
-        missing_characteristics,
-    ) = update_provided_characteristics(
-        slots, values, provided_characteristics, missing_characteristics
-    )
+    if input_msg != "":
+        (
+            slots,
+            values,
+            provided_characteristics,
+            missing_characteristics,
+        ) = update_provided_characteristics(
+            slots, values, provided_characteristics, missing_characteristics
+        )
     ordinal = get_position(input_msg)
     input_msg = preprocess_input_msg(input_msg, values)
     print(
@@ -72,21 +71,20 @@ def interprete_msg(data: dict) -> str:
     ):
         clothes = clothes_from_image(input_img)
         print(f"Trying VQA, found clothes: {clothes}")
-        if ignore_characteristics:
-            search_type = "image_search"
-        elif clothes:
+        if clothes:
             match = img_cap.get_matching_clothes_quey(clothes, slots, values)
             if match is not None:
                 input_msg = match
                 search_type = "vqa_search"
                 print(f"Searching with VQA for '{input_msg}'")
             else:
-                search_type = "text_search"
+                search_type = "auto"
+                print(f"No matches found, defaulting to regular search")
         else:
-            print(f"Clothes on image not found")
-            search_type = "text_search"
+            search_type = "auto"
+            print(f"Clothes on image not found, defaulting to regular search")
 
-        if missing_characteristics:
+        if missing_characteristics and input_msg != "":
             print(
                 f"Asking for information about missing characteristics: {missing_characteristics}"
             )
@@ -124,7 +122,6 @@ def interprete_msg(data: dict) -> str:
             "response": BEGGINING_MSG,
             "system_action": "",
         }
-
     elif intent == "user_neutral_what_can_i_ask_you":
         response = {
             "has_response": True,
@@ -132,7 +129,6 @@ def interprete_msg(data: dict) -> str:
             "response": HELP_MSG,
             "system_action": "",
         }
-
     elif intent == "user_neutral_goodbye":
         response = {
             "has_response": True,
@@ -177,7 +173,6 @@ def interprete_msg(data: dict) -> str:
             "response": answer,
             "system_action": "",
         }
-
     else:
         fst_message = False
         response = {
@@ -187,7 +182,6 @@ def interprete_msg(data: dict) -> str:
             "system_action": "",
         }
 
-    ignore_characteristics = False
     return json.dumps(response)
 
 
@@ -197,9 +191,6 @@ def update_provided_characteristics(
     provided_characteristics: dict[str, str],
     missing_characteristics: list[str],
 ):
-    raise NotImplementedError(
-        "ignore_characteristics should be here somewhere - i modeified this heavily "
-    )
     if necessary_characteristic_updated(slots, values) and not missing_characteristics:
         provided_characteristics = {
             "category_gender_name": provided_characteristics.get(
