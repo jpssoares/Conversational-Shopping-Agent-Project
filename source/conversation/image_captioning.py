@@ -8,6 +8,14 @@ model = BlipForConditionalGeneration.from_pretrained(
     "Salesforce/blip-image-captioning-large"
 )
 
+def remove_plural(value):
+    if value.endswith("es"):
+        return value[:-2]
+    elif value.endswith("s"):
+        return value[:-1]
+    else:
+        return value
+
 
 def get_clothing_items_from_caption(input_msg):
     txt = gpt.get_gpt_answer(GET_CLOTHING_ITEMS_PROMPT.format(input=input_msg))
@@ -46,7 +54,8 @@ def get_matching_clothes_quey(clothes, keys, values):
         # return first partial match in clothes array
         for value in values:
             for item in clothes:
-                if value in item:
+                print("remove_plural(value): ", remove_plural(value))
+                if remove_plural(value) in item and value != "":
                     return item
     except Exception as e:
         return None
