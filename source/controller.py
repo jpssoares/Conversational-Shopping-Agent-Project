@@ -327,6 +327,7 @@ def create_response_for_query(
     query_from_key_value_pairs = create_query_from_key_value_pairs(keys, values)
 
     if search_type == "vqa_search":
+        print("vqa search")
         return cross_modal_search(input_text_query, input_image_query)
     elif search_type == "full_text":
         return search_products_full_text(query_from_key_value_pairs)
@@ -335,10 +336,10 @@ def create_response_for_query(
     elif search_type == "text_and_attrs":
         return search_products_with_text_and_attributes(input_text_query)
     else:
+        print(input_image_query)
         if input_image_query == "" or input_image_query is None:
+            print("text_search")
             return text_embeddings_search(query_from_key_value_pairs)
         else:
-            if input_text_query == "":
-                return image_embeddings_search(input_image_query)
-            else:
-                return cross_modal_search(query_from_key_value_pairs, input_image_query)
+            print("image_search")
+            return image_embeddings_search(input_image_query)

@@ -14,6 +14,7 @@ from source.conversation.text_processing import get_position, preprocess_input_m
 fst_message = True
 last_results = None
 provided_characteristics = dict()
+ignore_characteristics = False
 NECESSARY_CHARACTERISTICS = ["category"]
 missing_characteristics = list()
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -27,6 +28,7 @@ def interprete_msg(data: dict) -> str:
     global fst_message
     global last_results
     global provided_characteristics
+    global ignore_characteristics
     global missing_characteristics
     input_msg: str = data.get("utterance")  # empty string if not present
     input_img = data.get("file")  # None if not present
@@ -68,10 +70,11 @@ def interprete_msg(data: dict) -> str:
         or (input_msg == "" and input_img is not None)
         or (missing_characteristics and intent != "user_neutral_greeting")
     ):
-
         clothes = clothes_from_image(input_img)
         print(f"Trying VQA, found clothes: {clothes}")
-        if clothes:
+        if ignore_characteristics:
+            search_type = "image_search"
+        elif clothes:
             match = img_cap.get_matching_clothes_quey(clothes, slots, values)
             if match is not None:
                 input_msg = match
@@ -184,6 +187,7 @@ def interprete_msg(data: dict) -> str:
             "system_action": "",
         }
 
+    ignore_characteristics = False
     return json.dumps(response)
 
 
@@ -193,6 +197,9 @@ def update_provided_characteristics(
     provided_characteristics: dict[str, str],
     missing_characteristics: list[str],
 ):
+    raise NotImplementedError(
+        "ignore_characteristics should be here somewhere - i modeified this heavily "
+    )
     if necessary_characteristic_updated(slots, values) and not missing_characteristics:
         provided_characteristics = {
             "category_gender_name": provided_characteristics.get(
