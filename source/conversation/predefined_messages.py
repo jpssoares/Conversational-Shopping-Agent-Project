@@ -30,7 +30,8 @@ GET_CLOTHING_ITEMS_PROMPT = "Please return a string array with the different clo
 
 def missing_characteristics_response(missing_characteristics: list) -> str:
     return "".join(
-        [
+        ["I need some more information to help You. "]
+        + [
             f"What {characteristic} do You want? "
             for characteristic in missing_characteristics
         ]
