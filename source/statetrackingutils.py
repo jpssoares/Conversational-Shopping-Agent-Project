@@ -14,14 +14,14 @@ class ModelOutput:
 class SlotFillingIntentDetectionModelOutput(ModelOutput):
     # the "main" value is the slot filling output
     def __init__(
-            self,
-            slot_filling_values=None,
-            intent=None,
-            dialogue="",
-            utterance=-1,
-            tokens=None,
-            *args,
-            **kwargs
+        self,
+        slot_filling_values=None,
+        intent=None,
+        dialogue="",
+        utterance=-1,
+        tokens=None,
+        *args,
+        **kwargs,
     ):
         """
         About intents: Some datasets may have more than one user intent per utterance.
@@ -35,7 +35,7 @@ class SlotFillingIntentDetectionModelOutput(ModelOutput):
         self.tokens = tokens
 
     def __str__(self):
-        return f'{self.dialogue}, {self.utterance}, Intent: {self.intents}; Slots: {[(key, value) for key, value in self.value.items()]}'
+        return f"{self.dialogue}, {self.utterance}, Intent: {self.intents}; Slots: {[(key, value) for key, value in self.value.items()]}"
 
     def __repr__(self):
         return str(self)
@@ -67,7 +67,7 @@ class SlotFillingIntentDetectionModelOutput(ModelOutput):
         self.intents.append(intent)
 
     def get_intent(self) -> str:
-        return self.intents[0] if self.intents else 'NONE'
+        return self.intents[0] if self.intents else "NONE"
 
     def set_all_slot_keys(self, all_slot_keys, default_value=""):
         for key in all_slot_keys:
@@ -79,9 +79,19 @@ class SlotFillingIntentDetectionModelOutput(ModelOutput):
 
 
 class SingleSlotInputExample:
-
-    def __init__(self, slot_key, slot_value, slot_gate_str, slot_gate,
-                 start=-1, end=-1, is_categorical=False, tokenized_slot_value=None, *args, **kwargs):
+    def __init__(
+        self,
+        slot_key,
+        slot_value,
+        slot_gate_str,
+        slot_gate,
+        start=-1,
+        end=-1,
+        is_categorical=False,
+        tokenized_slot_value=None,
+        *args,
+        **kwargs,
+    ):
         self.slot_key: str = slot_key.strip()
         self.slot_value: str = slot_value
         self.tokenized_slot_value: list[str] = tokenized_slot_value
@@ -95,10 +105,10 @@ class SingleSlotInputExample:
 
         if self.tokenized_slot_value is None:
             # if the tokenized slot value is not set, we assume that the slot value is already kind of tokenized
-            self.tokenized_slot_value = self.slot_value.split(' ')
+            self.tokenized_slot_value = self.slot_value.split(" ")
 
     def __str__(self) -> str:
-        return f'{self.slot_key}: {self.slot_value} ({self.slot_gate_str})'
+        return f"{self.slot_key}: {self.slot_value} ({self.slot_gate_str})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -106,12 +116,24 @@ class SingleSlotInputExample:
 
 class InputInfo:
     def __init__(self, input_info, *args, **kwargs):
-        self.input_info = input_info  # Generally, this should be enough to a _forward_ call
+        self.input_info = (
+            input_info  # Generally, this should be enough to a _forward_ call
+        )
 
 
 class SlotFillingInputInfo(InputInfo):
-    def __init__(self, slots, tokens, utterance_index, dialogue_id, intent, previous_state=None, input_info=None, *args,
-                 **kwargs):
+    def __init__(
+        self,
+        slots,
+        tokens,
+        utterance_index,
+        dialogue_id,
+        intent,
+        previous_state=None,
+        input_info=None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(input_info, *args, **kwargs)
         self.slots: dict[str, SingleSlotInputExample] = slots
         self.tokens: list[str] = tokens
@@ -121,15 +143,30 @@ class SlotFillingInputInfo(InputInfo):
         self.previous_state: dict = previous_state
 
     def __str__(self):
-        return f'Utterance {self.utterance_index} of dialogue {self.dialogue_id}: {self.tokens}'
+        return f"Utterance {self.utterance_index} of dialogue {self.dialogue_id}: {self.tokens}"
 
     def __repr__(self):
         return str(self)
 
 
-class SlotFillingQAInputInfo(InputInfo): # this should extend qainputinfo..
-    def __init__(self, slot, intent, question, context, utterance_index, dialogue_id, answer_ids, start_position=0, end_position=0, answer=None, input_info=None, name='', *args,
-                 **kwargs):
+class SlotFillingQAInputInfo(InputInfo):  # this should extend qainputinfo..
+    def __init__(
+        self,
+        slot,
+        intent,
+        question,
+        context,
+        utterance_index,
+        dialogue_id,
+        answer_ids,
+        start_position=0,
+        end_position=0,
+        answer=None,
+        input_info=None,
+        name="",
+        *args,
+        **kwargs,
+    ):
         super().__init__(input_info, *args, **kwargs)
         self.slot: str = slot
         self.intent: Union[str, list[str]] = intent
@@ -144,15 +181,26 @@ class SlotFillingQAInputInfo(InputInfo): # this should extend qainputinfo..
         self.name: str = name
 
     def __str__(self):
-        return f'Utterance {self.utterance_index} of dialogue {self.dialogue_id}: {self.question} {self.context}; {self.answer} ({self.slot if self.slot else self.intent})'
+        return f"Utterance {self.utterance_index} of dialogue {self.dialogue_id}: {self.question} {self.context}; {self.answer} ({self.slot if self.slot else self.intent})"
 
     def __repr__(self):
         return str(self)
 
 
 class QAInputInfo(InputInfo):
-    def __init__(self, question, context, start_position=0, end_position=0, answer=None, tokenized_answer=None, input_info=None, name='', *args,
-                 **kwargs):
+    def __init__(
+        self,
+        question,
+        context,
+        start_position=0,
+        end_position=0,
+        answer=None,
+        tokenized_answer=None,
+        input_info=None,
+        name="",
+        *args,
+        **kwargs,
+    ):
         super().__init__(input_info, *args, **kwargs)
         self.question: str = question
         self.context: str = context
@@ -162,16 +210,19 @@ class QAInputInfo(InputInfo):
         self.end_position: int = end_position
         self.name: str = name
 
-        self.slot = ''
-        self.intent = ''
+        self.slot = ""
+        self.intent = ""
         self.utterance_index: int = -1
-        self.dialogue_id: str = ''
+        self.dialogue_id: str = ""
 
     def __str__(self):
-        return f'Question: {self.question}; Context: {self.context}; Answer: {self.answer}'
+        return (
+            f"Question: {self.question}; Context: {self.context}; Answer: {self.answer}"
+        )
 
     def __repr__(self):
         return str(self)
+
 
 def find_span(tokens, attribute_value, end_token=None, start=-1) -> Tuple[int, int]:
     current_att_value_index: int = 0
@@ -192,7 +243,7 @@ def find_span(tokens, attribute_value, end_token=None, start=-1) -> Tuple[int, i
                 potential_start = token_i
             current_att_value_index += 1
             if current_att_value_index == len(
-                    attribute_value
+                attribute_value
             ):  # len because we increase the value beforehand
                 valid_potential_start, valid_potential_end, potential_end = (
                     potential_start,

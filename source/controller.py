@@ -1,14 +1,13 @@
-import base64
-import io
-
 from opensearchpy import OpenSearch
 import os
 import re
+import ast
+import validators
 from dotenv import load_dotenv
 from source.Encoder import Encoder
-from itertools import chain
+from source.image_handling import load_image
 from PIL import Image
-import spacy
+from typing import List, Union
 
 load_dotenv()
 
@@ -19,9 +18,7 @@ index_name = "farfetch_images"
 user = os.getenv("API_USER")
 password = os.getenv("API_PASSWORD")
 
-search_used = "text_embeddings"
-
-search_types = [
+SEARCH_TYPES = [
     "full_text",
     "boolean_search",
     "text_and_attrs",
@@ -30,7 +27,7 @@ search_types = [
     "cross_modal_embeddings",
 ]
 
-product_fields = [
+PRODUCT_FIELDS = [
     "product_id",
     "product_family",
     "product_category",
@@ -60,24 +57,9 @@ client = OpenSearch(
 )
 
 encoder = Encoder()
-nlp = spacy.load("en_core_web_sm")
-negation_words = set(
-    [
-        "no",
-        "without",
-        "not",
-        "none",
-        "neither",
-        "nor",
-        "never",
-        "nobody",
-        "nothing",
-        "nowhere",
-    ]
-)
 
 
-def get_recommendations(results):
+def get_recommendations(results: List[dict]):
     recommendations = []
 
     for r in results:
@@ -87,35 +69,45 @@ def get_recommendations(results):
                 r.get("product_short_description"),
                 r.get("product_id"),
                 r.get("product_image_path"),
+                r.get("product_attributes"),
+                r.get("product_materials"),
             )
         )
 
     return recommendations
 
 
-def create_new_recommendation(brand="None", desc="None", id="None", img_path="None"):
+def create_new_recommendation(
+    brand="None",
+    desc="None",
+    id="None",
+    img_path="None",
+    attributes="None",
+    materials="None",
+):
     recommendation = {
         "brand": brand,
         "description": desc,
         "id": id,
+        "attributes": _parse_attributes(attributes),
+        "materials": materials,
         "image_path": img_path,
     }
     return recommendation
 
 
-def get_client_search(query_denc):
+def get_client_search(query_denc: dict):
     response = client.search(body=query_denc, index=index_name)
     results = [r["_source"] for r in response["hits"]["hits"]]
 
-    # print("\nSearch results:")
-    # print(results)
     recommendations = get_recommendations(results)
     if len(recommendations) == 0 or query_denc is None:
         return None
     else:
         return recommendations
 
-def search_products_with_text_and_attributes(qtxt, size_of_query=3):
+
+def search_products_with_text_and_attributes(qtxt: str, size_of_query=3):
     qtxt_array = qtxt.split(" ")
 
     # verify that array has even len
@@ -136,7 +128,7 @@ def search_products_with_text_and_attributes(qtxt, size_of_query=3):
 
     query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {"query_string": {"query": result_query}},
     }
 
@@ -149,7 +141,7 @@ def search_products_full_text(qtxt: str, size_of_query=3):
     qtxt = re.sub("\s*and\s+|\s+", "+", qtxt)
     query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {
             "simple_query_string": {
                 "query": qtxt,
@@ -211,114 +203,37 @@ def search_products_boolean(qtxt: str, size_of_query=3):
 
     query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {"bool": bool_dict},
     }
 
     return get_client_search(query_denc)
 
 
-def negated_tokens(token):
-    descriptors = set(["pobj", "compound", "acomp", "amod", "attr"])
-    if token.text == "without":
-        root_child = next(token.children)
-        negated_tokens = [root_child.text] + [
-            child.text
-            for child in root_child.children
-            if child != token and child.dep_ in descriptors
-        ]
-        return negated_tokens
-    elif token.text == "no" or token.dep_ == "neg":
-        negated_tokens = [token.head.text] + [
-            child.text
-            for child in token.head.children
-            if child != token and child.dep_ in descriptors
-        ]
-        return negated_tokens
-    else:
-        return list()
-
-
-def text_embeddings_search(search_query, size_of_query=3):
-    try:
-        try:
-            negated_terms = next(
-                (
-                    chain(
-                        [
-                            negated_tokens(tok)
-                            for tok in nlp(search_query)
-                            if tok.dep_ == "neg" or tok.text in negation_words
-                        ]
-                    )
-                )
-            )
-        except StopIteration:
-            negated_terms = []
-        stop_words = [tok.text for tok in nlp(search_query) if tok.is_stop]
-        undesired_terms = set(negated_terms + stop_words)
-        desired_terms = set(search_query.split()) - undesired_terms - negation_words
-        desired_query = " ".join(desired_terms)
-        undesired_query = " ".join(undesired_terms)
-    except Exception as e:
-        print(
-            f"Unexpected error during negation processing: {e}",
-            "Defaulting to raw query.",
-            sep="\n",
-        )
-        desired_query = search_query
-        undesired_query = ""
-
-    print(f"Desired query: '{desired_query}'", f"without '{undesired_query}'", sep="\n")
-    desired_query_emb = encoder.encode(desired_query)
-    undesired_query_emb = encoder.encode(undesired_query)
-    desired_query_denc = {
+def text_embeddings_search(search_query: str, size_of_query=3):
+    search_query_emb = encoder.encode(search_query)
+    search_query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": desired_query_emb[0].detach().numpy(),
-                    "k": 2,
-                }
-            }
-        },
-    }
-    undesired_query_denc = {
-        "size": 20,
-        "_source": product_fields,
-        "query": {
-            "knn": {
-                "combined_embedding": {
-                    "vector": undesired_query_emb[0].detach().numpy(),
+                    "vector": search_query_emb[0].detach().numpy(),
                     "k": 2,
                 }
             }
         },
     }
 
-    desired_items = get_client_search(desired_query_denc)
-    undesired_items = get_client_search(undesired_query_denc)
-    for i in undesired_items:
-        if i in desired_items:
-            desired_items.remove(i)
-
-    return desired_items
+    return get_client_search(search_query_denc)
 
 
-def decode_img(input_image_query):
-    q_image = base64.b64decode(input_image_query.split(",")[1])
-    image = Image.open(io.BytesIO(q_image))
-    return image
-
-
-def image_embeddings_search(input_image_query):
-    img = decode_img(input_image_query)
-    emb_img = encoder.process_image(img)
+def image_embeddings_search(input_image_query: Image, size_of_query=3):
+    emb_img = encoder.process_image(input_image_query)
 
     query_denc = {
-        "size": 3,
-        "_source": product_fields,
+        "size": size_of_query,
+        "_source": PRODUCT_FIELDS,
         "query": {
             "knn": {"image_embedding": {"vector": emb_img[0].detach().numpy(), "k": 2}}
         },
@@ -327,82 +242,69 @@ def image_embeddings_search(input_image_query):
     return get_client_search(query_denc)
 
 
-def cross_modal_search(input_text_query, input_image_query, size_of_query = 3):
-    try:
-        try:
-            negated_terms = next(
-                (
-                    chain(
-                        [
-                            negated_tokens(tok)
-                            for tok in nlp(input_text_query)
-                            if tok.dep_ == "neg" or tok.text in negation_words
-                        ]
-                    )
-                )
-            )
-        except StopIteration:
-            negated_terms = []
-        stop_words = [tok.text for tok in nlp(input_text_query) if tok.is_stop]
-        undesired_terms = set(negated_terms + stop_words)
-        desired_terms = set(input_text_query.split()) - undesired_terms - negation_words
-        desired_query = " ".join(desired_terms)
-        undesired_query = " ".join(undesired_terms)
-    except Exception as e:
-        print(
-            f"Unexpected error during negation processing: {e}",
-            "Defaulting to raw query.",
-            sep="\n",
-        )
-        desired_query = input_text_query
-        undesired_query = ""
+def cross_modal_search(
+    input_text_query: str, input_image_query: Image, size_of_query=3
+):
+    query_emb = encoder.encode_cross_modal(input_text_query, input_image_query)
 
-    #print(f"Desired query: '{desired_query}'", f"without '{undesired_query}'", sep="\n")
-    image = decode_img(input_image_query)
-
-    cross_modal_embs_desired = encoder.encode_cross_modal(desired_query, image)
-    cross_modal_embs_undesired = encoder.encode_cross_modal(undesired_query, image)
-
-    desired_query_denc = {
+    query_denc = {
         "size": size_of_query,
-        "_source": product_fields,
+        "_source": PRODUCT_FIELDS,
         "query": {
             "knn": {
                 "combined_embedding": {
-                    "vector": cross_modal_embs_desired,
+                    "vector": query_emb,
                     "k": 2,
                 }
             }
         },
     }
-    undesired_query_denc = {
-        "size": 20,
-        "_source": product_fields,
-        "query": {
-            "knn": {
-                "combined_embedding": {"vector": cross_modal_embs_undesired, "k": 2}
-            }
-        },
-    }
 
-    desired_items = get_client_search(desired_query_denc)
-    undesired_items_ids = [
-        recommendation.get("id", -1)
-        for recommendation in get_client_search(undesired_query_denc).get(
-            "recommendations", list()
+    return get_client_search(query_denc)
+
+
+def _parse_attributes(attributes: str) -> list[dict]:
+    """
+    Attributes are a list serialized into a string or None.
+    """
+    try:
+        attrs: list = ast.literal_eval(attributes)
+    except ValueError:
+        attrs = list()
+    return attrs
+
+
+def get_similar(recommendation: dict[str, Union[str, dict]], size_of_query=3):
+    qtxt = " ".join(
+        (
+            [
+                recommendation.get("brand", ""),
+                recommendation.get("description", ""),
+            ]
+            + [material for material in recommendation.get("materials", list())]
+            + [
+                attr
+                for attribute in _parse_attributes(
+                    recommendation.get("attributes", list())
+                )
+                for attr in attribute.get("attribute_values", list())
+            ]
         )
+    )
+    image_url = recommendation.get("image_path")
+    image = load_image(image_url)
+    results = (
+        cross_modal_search(qtxt, image, size_of_query=size_of_query + 1)
+        if validators.url(image_url)
+        else text_embeddings_search(qtxt, size_of_query=size_of_query + 1)
+    )
+    results_without_the_same_item = [
+        item for item in results if item.get("id", 0) != recommendation.get("id", 1)
     ]
-    desired_items["recommendations"] = [
-        recommendation
-        for recommendation in desired_items.get("recommendations", list())
-        if recommendation.get("id", -1) not in undesired_items_ids
-    ][:3]
-    print(desired_items)
-
-    return desired_items, desired_items["recommendations"]
+    return results_without_the_same_item[:size_of_query]
 
 
-def create_query_from_key_value_pais(keys, values):
+def create_query_from_key_value_pairs(keys: List[str], values: List[str]):
     result_query = ""
     idx = 0
     while idx < len(keys):
@@ -412,25 +314,37 @@ def create_query_from_key_value_pais(keys, values):
             result_query = result_query + " "
     return result_query
 
-def create_response_for_query(input_text_query, input_image_query, keys, values):
-    global search_used
+
+def create_response_for_query(
+    input_text_query: str,
+    input_image_query: Image,
+    keys: List[str],
+    values: List[str],
+    search_type="auto",
+):
+    print(f"Creating response for query: '{input_text_query}' {input_image_query}")
     # query_from_values = " ".join(values) # can use this one instead, but it has the same accuracy
-    query_from_key_value_pairs = create_query_from_key_value_pais(keys, values)
-    
-    if search_used == "vqa_search":
-        search_used = "text_embeddings" # restore search type to default
-        return text_embeddings_search(input_text_query)
-    elif search_used == "full_text":
-        return search_products_full_text(query_from_key_value_pairs)
-    elif search_used == "boolean_search":
-        return search_products_boolean(query_from_key_value_pairs)
-    elif search_used == "text_and_attrs":
-        return search_products_with_text_and_attributes(input_text_query)
-    else:
-        if input_image_query == "" or input_image_query is None:
+    query_from_key_value_pairs = create_query_from_key_value_pairs(keys, values)
+
+    if search_type == "vqa_search":
+        print("Using QVA Cross-Modal Search")
+        return cross_modal_search(input_text_query, input_image_query)
+    elif search_type == "auto":
+        if input_text_query != "" and input_image_query is not None:
+            print("Using Cross-Modal Search")
+            return cross_modal_search(query_from_key_value_pairs, input_image_query)
+        if input_image_query is not None:
+            print("Using inage embeddings search")
+            return image_embeddings_search(input_image_query)
+        if input_text_query != "":
+            print("Usinng text embeddings search")
             return text_embeddings_search(query_from_key_value_pairs)
-        else:
-            if input_text_query == "":
-                return image_embeddings_search(input_image_query)
-            else:
-                return cross_modal_search(query_from_key_value_pairs, input_image_query)
+
+        print("Neither text nor image provided, nothing to search for")
+        return None
+    elif search_type == "full_text":
+        return search_products_full_text(query_from_key_value_pairs)
+    elif search_type == "boolean_search":
+        return search_products_boolean(query_from_key_value_pairs)
+    elif search_type == "text_and_attrs":
+        return search_products_with_text_and_attributes(input_text_query)
