@@ -29,8 +29,12 @@ def get_position(input_msg: str) -> Union[int, None]:
         if _is_ordinal(num)
     ]
     ordinals.extend(
-        [-1 for word in input_msg.split() if fuzz.ratio(word.lower(), "last") > 80]
+        [-1 for word in input_msg.split() if fuzz.ratio(word.lower(), "last") > 71]
     )
+    ordinals.extend(
+        [-1 for word in input_msg.split() if fuzz.ratio(word.lower(), "ultimate") > 71]
+    )
+
     return ordinals[0] if ordinals else None
 
 
