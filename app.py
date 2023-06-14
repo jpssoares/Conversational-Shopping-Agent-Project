@@ -33,7 +33,12 @@ def interprete_msg(data: dict) -> str:
     input_img = load_image(input_msg, input_img)
 
     intent, slots, values = dialog.interpreter(input_msg)
-    slots, values, provided_characteristics = update_provided_characteristics(
+    (
+        slots,
+        values,
+        provided_characteristics,
+        missing_characteristics,
+    ) = update_provided_characteristics(
         slots, values, provided_characteristics, missing_characteristics
     )
     ordinal = get_position(input_msg)
@@ -61,7 +66,7 @@ def interprete_msg(data: dict) -> str:
     if (
         intent == "user_request_get_products"
         or (input_msg == "" and input_img is not None)
-        or missing_characteristics
+        or (missing_characteristics and intent != "user_neutral_greeting")
     ):
 
         clothes = clothes_from_image(input_img)
@@ -78,9 +83,6 @@ def interprete_msg(data: dict) -> str:
             print(f"Clothes on image not found")
             search_type = "text_search"
 
-        missing_characteristics = update_missing_characteristics(
-            provided_characteristics
-        )
         if missing_characteristics:
             print(
                 f"Asking for information about missing characteristics: {missing_characteristics}"
@@ -92,16 +94,6 @@ def interprete_msg(data: dict) -> str:
                 "system_action": "",
             }
             return json.dumps(response)
-        else:
-            missing_characteristics = list()
-            try:
-                provided_characteristics = {
-                    "category_gender_name": provided_characteristics.get(
-                        "category_gender_name", ""
-                    )
-                }
-            except KeyError:
-                provided_characteristics = dict()
 
         last_results = ctrl.create_response_for_query(
             input_msg, input_img, slots, values, search_type
@@ -174,6 +166,7 @@ def interprete_msg(data: dict) -> str:
             "system_action": "",
         }
     elif intent in dialog.QA_INTENT_KEYS:
+        print(f"Generating {intent} information about {input_msg}")
         answer = product_qa.get_qa_answer(intent, last_results, input_msg)
         response = {
             "has_response": True,
@@ -200,21 +193,42 @@ def update_provided_characteristics(
     provided_characteristics: dict[str, str],
     missing_characteristics: list[str],
 ):
-    if missing_characteristics and not slots:
-        # If there were some characteristics missing, but no comprehensible response was provided answer is assumed to be "any".
-        for characteristic in missing_characteristics:
-            provided_characteristics[characteristic] = ""
-
+    if necessary_characteristic_updated(slots, values) and not missing_characteristics:
+        provided_characteristics = {
+            "category_gender_name": provided_characteristics.get(
+                "category_gender_name", ""
+            )
+        }
     # we use all previously provided characteristics, but if user changed their mind newest value is used
     for slot, value in zip(slots, values):
         if slot == "dress_silhouette":
             slot = "category"
+        if value == "[intent]":
+            continue
         provided_characteristics[slot] = value
 
     updated_slots = list(provided_characteristics.keys())
     update_values = list(provided_characteristics.values())
+    missing_characteristics = [
+        characteristic
+        for characteristic in NECESSARY_CHARACTERISTICS
+        if characteristic not in provided_characteristics.keys()
+    ]
 
-    return updated_slots, update_values, provided_characteristics
+    return (
+        updated_slots,
+        update_values,
+        provided_characteristics,
+        missing_characteristics,
+    )
+
+
+def necessary_characteristic_updated(slots: list[str], values: list[str]):
+    for slot, value in zip(slots, values):
+        if slot in NECESSARY_CHARACTERISTICS and value != "[intent]":
+            print(f"Slot '{slot}' changed by the user")
+            return True
+    return False
 
 
 def update_missing_characteristics(provided_characteristics: dict[str, str]):
