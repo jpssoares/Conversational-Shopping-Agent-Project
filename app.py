@@ -44,6 +44,7 @@ def interprete_msg(data: dict) -> str:
         )
     ordinal = get_position(input_msg)
     input_msg = preprocess_input_msg(input_msg, values)
+
     print(
         f"Processed message: '{input_msg}', intent: '{intent}', provided characteristics: '{provided_characteristics}'",
         f"Detected slots: '{slots}', values: '{values}', ordinal: {ordinal}",
@@ -199,7 +200,7 @@ def update_provided_characteristics(
         }
     # we use all previously provided characteristics, but if user changed their mind newest value is used
     for slot, value in zip(slots, values):
-        if slot == "dress_silhouette":
+        if slot == "dress_silhouette" or slot == "hat_style":
             slot = "category"
         if value == "[intent]":
             continue
