@@ -36,7 +36,7 @@ def interprete_msg(data: dict) -> str:
     slots, values, provided_characteristics = update_provided_characteristics(
         slots, values, provided_characteristics, missing_characteristics
     )
-    ordinal = get_position(input_msg)
+    ordinal = product_qa.get_desired_item_position(input_msg)
     input_msg = preprocess_input_msg(input_msg, values)
     print(
         f"Processed message: '{input_msg}', intent: '{intent}', provided characteristics: '{provided_characteristics}'",
@@ -97,7 +97,7 @@ def interprete_msg(data: dict) -> str:
             try:
                 provided_characteristics = {
                     "category_gender_name": provided_characteristics.get(
-                        "category_gender_name"
+                        "category_gender_name", ""
                     )
                 }
             except KeyError:
