@@ -6,14 +6,15 @@ from typing import Union
 
 nlp = spacy.load("en_core_web_sm")
 nlp.Defaults.stop_words |= {"want", "would", "like", "looking", "for", "searching"}
+special_tokens = ["[intent]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
 ORDINAL_SUFFIXES = ["st", "nd", "rd", "th"]
 ORDINA_PATTERN = r"\d+\w{2}"
 
 
 def preprocess_input_msg(text: str, values: list[str]) -> str:
-    no_stopwords = set([token.text for token in nlp(text) if not token.is_stop])
-    no_stopwords.update(
-        [v for value in values for v in value.split() if v != "[intent]"]
+    no_stopwords = [token.text for token in nlp(text) if not token.is_stop]
+    no_stopwords.extend(
+        [v for value in values for v in value.split() if (v not in special_tokens)]
     )
     processed_msg = " ".join(no_stopwords)
     return processed_msg
