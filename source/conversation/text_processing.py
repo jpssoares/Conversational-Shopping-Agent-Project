@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import spacy
 import numerizer  # it's necessary for .numerize() to work
 import re
@@ -12,11 +14,20 @@ ORDINA_PATTERN = r"\d+\w{2}"
 
 
 def preprocess_input_msg(text: str, values: list[str]) -> str:
-    no_stopwords = [token.text for token in nlp(text) if not token.is_stop]
-    no_stopwords.extend(
-        [v for value in values for v in value.split() if (v not in special_tokens)]
-    )
-    processed_msg = " ".join(no_stopwords)
+    unique_tokens = []
+    token_dict = OrderedDict()
+
+    for token in nlp(text):
+        if not token.is_stop and token.text not in token_dict:
+            token_dict[token.text] = None
+
+    for value in values:
+        for token in value.split():
+            if token not in token_dict and token not in special_tokens:
+                token_dict[token] = None
+
+    unique_tokens = list(token_dict.keys())
+    processed_msg = " ".join(unique_tokens)
     return processed_msg
 
 

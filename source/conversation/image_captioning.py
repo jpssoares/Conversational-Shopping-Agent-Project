@@ -54,7 +54,6 @@ def get_matching_clothes_quey(clothes, keys, values):
         # return first partial match in clothes array
         for value in values:
             for item in clothes:
-                print("remove_plural(value): ", remove_plural(value))
                 if remove_plural(value) in item and value != "":
                     return item
     except Exception as e:
