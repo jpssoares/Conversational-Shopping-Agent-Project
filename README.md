@@ -2,8 +2,7 @@
 
 Project made by Artur Stopa, João Soares and Ricardo Pereira.
 
-Read the paper [here](https://github.com/jpssoares/Conversational-Shopping-Agent-Project/edit/main/paper.pdf).
-
+Read the paper [here](https://github.com/jpssoares/Conversational-Shopping-Agent-Project/blob/main/paper.pdf).
 
 ### Instalation/Setup
 #### Step 0 - Create env File
