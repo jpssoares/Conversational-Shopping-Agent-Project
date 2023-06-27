@@ -1,5 +1,7 @@
 # Conversational-Shopping-Agent-Project
 
+![icon_512x512](https://github.com/jpssoares/Conversational-Shopping-Agent-Project/assets/57997233/9a6a0183-ed07-467e-8af6-c06cede1262b)
+
 Project made by Artur Stopa, João Soares and Ricardo Pereira.
 
 Conversational agent built with ML models, such as Clip, Blip and GPT. Read the paper [here](https://github.com/jpssoares/Conversational-Shopping-Agent-Project/blob/main/paper.pdf).
